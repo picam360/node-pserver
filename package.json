@@ -1,0 +1,27 @@
+{
+ "name": "picam360-server",
+ "version": "0.0.1",
+ "private": true,
+ "scripts": {
+  "start": "node app"
+ },
+ "dependencies": {
+  "async": "*",
+  "express": "*",
+  "socket.io": "*",
+  "moment": "*",
+  "diskusage": "*",
+  "sprintf-js": "*",
+  "uuid": "~3.3.3",
+  "wrtc": "^0.4.3",
+  "xmlhttprequest": "^1.8.0",
+  "serialport": "^6.2.0",
+  "aws-sdk" : "*",
+  "aws-iot-device-sdk" : "*",
+  "i2c-bus" : "*",
+  "alsa-capture" : "*",
+  "eventemitter3" : "*",
+  "node-gpsd" : "*",
+  "uuid-parse" : "*"
+ }
+}

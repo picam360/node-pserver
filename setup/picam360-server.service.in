@@ -1,0 +1,11 @@
+[Unit]
+Description = picam360-server daemon
+
+[Service]
+ExecStart = /bin/bash @CMAKE_INSTALL_PREFIX@/bin/picam360-server
+ExecStartPost = /bin/sleep 3
+Restart = always
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
