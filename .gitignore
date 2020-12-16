@@ -29,8 +29,17 @@
 
 userdata
 node_modules
+package-lock.json
 config.json
 www
+
+#cmake
+Makefile
+CMakeFiles
+CMakeScripts
+CMakeCache.txt
+cmake_install.cmake
+*-debug.cmake
 
 .DS_Store
 .snipet

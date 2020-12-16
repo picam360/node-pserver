@@ -14,7 +14,7 @@ var xmlhttprequest = require('xmlhttprequest');
 global.XMLHttpRequest = xmlhttprequest.XMLHttpRequest;
 var EventEmitter = require('eventemitter3');
 var util = require('util');
-var RTCAudioSourceAlsa = require("./alsaaudio.js");
+//var RTCAudioSourceAlsa = require("./alsaaudio.js");
 var uuidParse = require('uuid-parse');
 
 var UPSTREAM_DOMAIN = "upstream.";

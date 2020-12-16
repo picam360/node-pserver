@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1.3)
 
-message("picam360-server generating Makefile")
-project(picam360-server)
+message("pserver generating Makefile")
+project(pserver)
 
 message("check node path")
 execute_process(COMMAND which node OUTPUT_VARIABLE NODE_PATH OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -10,8 +10,8 @@ if(NOT NODE_PATH)
 endif()
 
 add_custom_target(git_clone_www ALL
-	COMMAND test -d www || git clone --depth 1 https://github.com/picam360/picam360-viewer.git www
-	COMMENT "git clone --depth 1 https://github.com/picam360/picam360-viewer.git www"
+	COMMAND test -d www || git clone --depth 1 https://github.com/picam360/pviewer.git www
+	COMMENT "git clone --depth 1 https://github.com/picam360/pviewer.git www"
 )
 
 add_custom_target(git_submodule_update ALL
