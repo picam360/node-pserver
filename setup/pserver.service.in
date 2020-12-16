@@ -1,8 +1,8 @@
 [Unit]
-Description = picam360-server daemon
+Description = pserver daemon
 
 [Service]
-ExecStart = /bin/bash @CMAKE_INSTALL_PREFIX@/bin/picam360-server
+ExecStart = /bin/bash @CMAKE_INSTALL_PREFIX@/bin/pserver
 ExecStartPost = /bin/sleep 3
 Restart = always
 Type = simple
