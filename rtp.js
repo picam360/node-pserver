@@ -1,9 +1,5 @@
 var dgram = require("dgram");
 
-var sequencenumber = 0;
-var timestamp = 0;
-var csrc = 0;
-
 function PacketHeader(pack) {
 	var packetlength = pack.length;
 	var payloadtype = pack.readUInt8(1) & 0x7F;
@@ -36,138 +32,96 @@ function PacketHeader(pack) {
 			return packetlength - self.GetHeaderLength();
 		},
 		GetPayload : function() {
-			return new Uint8Array(pack, self.GetHeaderLength(), self
-				.GetPayloadLength());
+			return pack.slice(self.GetHeaderLength(), packetlength); //start, end
 		}
 	};
 	return self;
 }
 
-function build_packet(data, pt) {
-	var header_len = 12;
-	var pack = new Buffer(header_len + data.length);
-	pack.writeUInt8(0, 0);
-	pack.writeUInt8(pt & 0x7F, 1);
-	pack.writeUInt16BE(sequencenumber, 2);
-	pack.writeUInt32BE(timestamp, 4);
-	pack.writeUInt32BE(csrc, 8);
-	data.copy(pack, header_len);
 
-	sequencenumber++;
-	if (sequencenumber >= (1 << 16)) {
-		sequencenumber = 0;
+function Rtp(conn) {
+	if(!conn){
+		return null;
 	}
 
-	return pack;
-}
-
-function set_callback(port, callback) {
-
-	var rtp_rx = dgram.createSocket("udp4");
-
-	rtp_rx.on("error", function(err) {
-		console.log("server error:\n" + err.stack);
-		server.close();
-	});
-
-	var marker = 0;
-	var pack = null;
-	var xmp = false;
-	var xmp_len = 0;
-	var xmp_pos = 0;
-	rtp_rx
-		.on("message", function(buff, rinfo) {
-			var data_len = buff.length;
-			for (var i = 0; i < data_len; i++) {
-				if (xmp) {
-					if (xmp_pos == 2) {
-						xmp_len = buff[i] << 8;//network(big) endian
-						xmp_pos++;
-					} else if (xmp_pos == 3) {
-						xmp_len += buff[i] << 0;//network(big) endian
-						xmp_pos++;
-					} else if (xmp_pos == 4) {
-						if (buff[i] == 0x72) {// r
-							xmp_pos++;
-						} else {
-							xmp = false;
-						}
-					} else if (xmp_pos == 5) {
-						if (buff[i] == 0x74) { // t
-							xmp_pos++;
-						} else {
-							xmp = false;
-						}
-					} else if (xmp_pos == 6) {
-						if (buff[i] == 0x70) {// p
-							xmp_pos++;
-						} else {
-							xmp = false;
-						}
-					} else if (xmp_pos == 7) { // rtp_header
-						if (buff[i] == 0x00) { // \0
-							xmp_pos++;
-						} else {
-							xmp = false;
-						}
-					} else {
-						if (xmp_pos == 8) {
-							pack = new Buffer(xmp_len - 8);
-						}
-						if (i + (xmp_len - xmp_pos) <= data_len) {
-							buff.copy(pack, xmp_pos - 8, i, i
-								+ (xmp_len - xmp_pos));
-							i += xmp_len - xmp_pos - 1;
-							xmp_pos = xmp_len;
-
-							callback(PacketHeader(pack));
-
-							pack = null;
-							xmp = false;
-						} else {
-							var rest_in_buff = data_len - i;
-							buff.copy(pack, xmp_pos - 8, i, i + rest_in_buff);
-							i = data_len - 1;
-							xmp_pos += rest_in_buff;
-						}
-					}
-				} else {
-					if (marker) {
-						marker = 0;
-						if (buff[i] == 0xE1) { // xmp
-							xmp = true;
-							xmp_pos = 2;
-							xmp_len = 0;
-						}
-					} else if (buff[i] == 0xFF) {
-						marker = 1;
-					}
-				}
+	var m_bitrate = 0;
+	var m_last_packet_time = Date.now();
+	
+	var m_conn = conn;
+	var m_callback = null;
+	var m_sequencenumber = 0;
+	var m_timestamp = 0;
+	var m_src = 0;
+	
+	m_conn.on("data", function(buff) {
+		if (m_callback) {
+			if (buff.constructor.name != "Buffer") {
+				buff = new Buffer(buff);
 			}
-		});
-
-	rtp_rx
-		.on("listening", function() {
-			var address = rtp_rx.address();
-			console.log("server listening " + address.address + ":"
-				+ address.port);
-		});
-
-	rtp_rx.bind(port);
-}
-
-// @_packet : Buffer
-function sendpacket(stream, packets) {
-	if (!Array.isArray(packets)) {
-		stream.send(packets);
-		return;
-	}
-	for (var i = 0; i < packets.length; i++) {
-		stream.send(packets[i]);
-	}
+			m_callback(PacketHeader(buff));
+		}
+	});
+	
+	var self = {
+		build_packet: function(data, pt) {
+			var header_len = 12;
+			var pack = new Buffer(header_len + data.length);
+			pack.writeUInt8(0, 0);
+			pack.writeUInt8(pt & 0x7F, 1);
+			pack.writeUInt16BE(m_sequencenumber, 2);
+			pack.writeUInt32BE(m_timestamp, 4);
+			pack.writeUInt32BE(m_src, 8);
+			data.copy(pack, header_len);
+		
+			m_sequencenumber++;
+			if (m_sequencenumber >= (1 << 16)) {
+				m_sequencenumber = 0;
+			}
+		
+			return pack;
+		},
+		set_callback : function(callback) {
+			m_callback = callback;
+		},
+		// @_packet : Buffer
+		sendpacket: function(packets) {
+			if (!Array.isArray(packets)) {
+				m_conn.send(packets);
+				return;
+			}
+			for (var i = 0; i < packets.length; i++) {
+				m_conn.send(packets[i]);
+			}
+		},
+//		build_packet: function (data, pt) {
+//			var raw_header_len = 8;
+//			var header_len = 12;
+//			var pack = new Buffer(raw_header_len + header_len + data.length);
+//			pack[0] = 0xFF;
+//			pack[1] = 0xE1;
+//			pack[2] = (pack.length >> 8) & 0xFF;//network(big) endian
+//			pack[3] = (pack.length >> 0) & 0xFF;//network(big) endian
+//			pack[4] = 0x72; // r
+//			pack[5] = 0x74; // t
+//			pack[6] = 0x70; // p
+//			pack[7] = 0x00; // \0
+//			pack.writeUInt8(0, raw_header_len + 0);
+//			pack.writeUInt8(pt & 0x7F, raw_header_len + 1);
+//			pack.writeUInt16BE(sequencenumber, raw_header_len + 2);
+//			pack.writeUInt32BE(timestamp, raw_header_len + 4);
+//			pack.writeUInt32BE(csrc, raw_header_len + 8);
+//			data.copy(pack, raw_header_len + header_len);
+//		
+//			sequencenumber++;
+//			if (sequencenumber >= (1 << 16)) {
+//				sequencenumber = 0;
+//			}
+//		
+//			return pack;
+//		},
+	};
+	return self;
 }
 
 exports.PacketHeader = PacketHeader;
-exports.set_callback = set_callback;
-exports.build_packet = build_packet;
-exports.sendpacket = sendpacket;
+exports.Rtp = Rtp;
