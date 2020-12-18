@@ -185,6 +185,23 @@ async.waterfall([
 			}, 1000);
 		}
 
+		rtp_mod.remove_conn = function(conn) {
+			for (var i = rtp_rx_conns.length - 1; i >= 0; i--) {
+				if (rtp_rx_conns[i] === conn) {
+					console.log("connection closed : " +
+						rtp_rx_conns[i].attr.ip);
+					clearInterval(conn.attr.timer);
+					conn.close();
+					if(conn.attr.pst){
+						pstcore.pstcore_destroy_pstreamer(conn.attr.pst);
+						conn.attr.pst = 0;
+					}
+
+					rtp_rx_conns.splice(i, 1);
+				}
+			}
+		};
+		
 		rtp_mod.add_conn = function(conn) {
 			var ip;
 			if (conn.peerConnection) { // webrtc
@@ -194,7 +211,7 @@ async.waterfall([
 			}
 			if (rtp_rx_conns.length >= 2) { // exceed client
 				console.log("exceeded_num_of_clients : " + ip);
-				rtp.send_error(conn, "exceeded_num_of_clients");
+				rtp_mod.send_error(conn, "exceeded_num_of_clients");
 				return;
 			} else {
 				console.log("connection opend : " + ip);
@@ -304,18 +321,20 @@ async.waterfall([
 				rtp_rx_conns.push(conn);
 
 				conn.attr.timer = setInterval(function() {
-					var now = new Date().getTime();
-					if (now - conn.attr.timeout > 60000) {
-						console.log("timeout");
-						rtp.remove_conn(conn);
-						conn.close();
-						return;
-					}
-					if(conn.attr.param_pendings.length > 0) {
-						var msg = "[" + conn.attr.param_pendings.join(',') + "]";
-						var pack = rtp.build_packet(new Buffer(msg, 'ascii'), PT_SET_PARAM);
-						rtp.sendpacket(pack);
-						conn.attr.param_pendings = [];
+					try{
+						var now = new Date().getTime();
+						if (now - conn.attr.timeout > 60000) {
+							console.log("timeout");
+							throw "TIMEOUT";
+						}
+						if(conn.attr.param_pendings.length > 0) {
+							var msg = "[" + conn.attr.param_pendings.join(',') + "]";
+							var pack = rtp.build_packet(new Buffer(msg, 'ascii'), PT_SET_PARAM);
+							rtp.sendpacket(pack);
+							conn.attr.param_pendings = [];
+						}
+					}catch(err){
+						rtp_mod.remove_conn(conn);
 					}
 				}, 33);
 				rtp.set_callback(function(packet) {
@@ -918,11 +937,6 @@ async.waterfall([
 				value: upstream_menu
 			};
 		});
-
-		// delete all frame
-		var cmd = 'destroy_vstream -a';
-		console.log(cmd);
-		plugin_host.send_command(UPSTREAM_DOMAIN + cmd);
 
 		callback(null);
 	},

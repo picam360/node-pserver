@@ -43,15 +43,10 @@ function Rtp(conn) {
 	if(!conn){
 		return null;
 	}
-
-	var m_bitrate = 0;
-	var m_last_packet_time = Date.now();
 	
 	var m_conn = conn;
 	var m_callback = null;
 	var m_sequencenumber = 0;
-	var m_timestamp = 0;
-	var m_src = 0;
 	
 	m_conn.on("data", function(buff) {
 		if (m_callback) {
@@ -63,14 +58,17 @@ function Rtp(conn) {
 	});
 	
 	var self = {
-		build_packet: function(data, pt) {
+		build_packet: function(data, pt, timestamp_ms) {
+			var now = new Date().getTime();
+			timestamp_s = Math.floor((timestamp_ms || now) / 1000);
+			timestamp_ss = (timestamp_ms || now) / 1000 - timestamp_s;
 			var header_len = 12;
 			var pack = new Buffer(header_len + data.length);
 			pack.writeUInt8(0, 0);
 			pack.writeUInt8(pt & 0x7F, 1);
 			pack.writeUInt16BE(m_sequencenumber, 2);
-			pack.writeUInt32BE(m_timestamp, 4);
-			pack.writeUInt32BE(m_src, 8);
+			pack.writeUInt32BE(timestamp_s, 4);
+			pack.writeUInt32BE(timestamp_ss * 1e6, 8);
 			data.copy(pack, header_len);
 		
 			m_sequencenumber++;
@@ -93,32 +91,6 @@ function Rtp(conn) {
 				m_conn.send(packets[i]);
 			}
 		},
-//		build_packet: function (data, pt) {
-//			var raw_header_len = 8;
-//			var header_len = 12;
-//			var pack = new Buffer(raw_header_len + header_len + data.length);
-//			pack[0] = 0xFF;
-//			pack[1] = 0xE1;
-//			pack[2] = (pack.length >> 8) & 0xFF;//network(big) endian
-//			pack[3] = (pack.length >> 0) & 0xFF;//network(big) endian
-//			pack[4] = 0x72; // r
-//			pack[5] = 0x74; // t
-//			pack[6] = 0x70; // p
-//			pack[7] = 0x00; // \0
-//			pack.writeUInt8(0, raw_header_len + 0);
-//			pack.writeUInt8(pt & 0x7F, raw_header_len + 1);
-//			pack.writeUInt16BE(sequencenumber, raw_header_len + 2);
-//			pack.writeUInt32BE(timestamp, raw_header_len + 4);
-//			pack.writeUInt32BE(csrc, raw_header_len + 8);
-//			data.copy(pack, raw_header_len + header_len);
-//		
-//			sequencenumber++;
-//			if (sequencenumber >= (1 << 16)) {
-//				sequencenumber = 0;
-//			}
-//		
-//			return pack;
-//		},
 	};
 	return self;
 }
