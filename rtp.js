@@ -124,4 +124,5 @@ function Rtp(conn) {
 }
 
 exports.PacketHeader = PacketHeader;
+exports.PacketHeaderLength = 12;
 exports.Rtp = Rtp;

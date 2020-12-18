@@ -283,8 +283,16 @@ async.waterfall([
 				pstcore.pstcore_set_param(conn.attr.pst, "pvf_loader", "url", url);
 				pstcore.pstcore_set_dequeue_callback(conn.attr.pst, (data)=>{
 					//console.log("dequeue " + data.length);
-					var pack = rtp.build_packet(data, PT_ENQUEUE);
-					rtp.sendpacket(pack);
+					var CHUNK_SIZE = conn.getMaxPayload() - rtp_mod.PacketHeaderLength;
+					for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
+						var chunk = data.slice(cur, cur + CHUNK_SIZE);
+						var pack = rtp.build_packet(chunk, PT_ENQUEUE);
+						rtp.sendpacket(pack);
+					}
+					{//end packet
+						var pack = rtp.build_packet(new Buffer("<eob/>", 'ascii'), PT_ENQUEUE);
+						rtp.sendpacket(pack);
+					}
 				});
 		
 				pstcore.pstcore_add_set_param_done_callback((msg)=>{
@@ -437,6 +445,9 @@ async.waterfall([
 						self.close();
 					});
 				}
+				getMaxPayload() {
+					return dc._maxPayload;
+				}
 				send(data) {
 					if (dc.readyState != 1) {
 						return;
@@ -565,6 +576,9 @@ async.waterfall([
 								dc.addEventListener('message', function(data) {
 									self.emit('data', Buffer.from(new Uint8Array(data.data)));
 								});
+							}
+							getMaxPayload() {
+								return dc.maxRetransmits;
 							}
 							send(data) {
 								if (dc.readyState != 'open') {
