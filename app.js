@@ -93,13 +93,23 @@ var m_audio_source = null;
 var http = null;
 
 var options = [];
+var m_pvf_filepath = null;
 
 async.waterfall([
 	function(callback) { // argv
+		var wrtc_key = null;
 		var conf_filepath = 'config.json';
 		for (var i = 0; i < process.argv.length; i++) {
 			if (process.argv[i] == "-c") {
 				conf_filepath = process.argv[i + 1];
+				i++;
+			}
+			if (process.argv[i] == "-f") {
+				m_pvf_filepath = process.argv[i + 1];
+				i++;
+			}
+			if (process.argv[i] == "-w") {
+				wrtc_key = process.argv[i + 1];
 				i++;
 			}
 		}
@@ -111,6 +121,11 @@ async.waterfall([
 			options = JSON
 				.parse(fs.readFileSync(tmp_conf_filepath, 'utf8'));
 			child_process.exec("rm " + tmp_conf_filepath);
+			
+			if(wrtc_key){
+				options["wrtc_enabled"] = true;
+				options["wrtc_key"] = wrtc_key;
+			}
 
 			callback(null);
 		});
@@ -287,17 +302,18 @@ async.waterfall([
 					}
 				});
 			}).then(() => {
-				if (!options['stream_defs'] || !options['stream_defs'][conn.frame_info.stream_def]) {
-					console.log("no stream definition : " + conn.frame_info.stream_def);
-					return;
+				var def;
+				if(m_pvf_filepath){
+					def = "pvf_loader url=\"file:/" + m_pvf_filepath + "\"";
+				}else{
+					if (!options['stream_defs'] || !options['stream_defs'][conn.frame_info.stream_def]) {
+						console.log("no stream definition : " + conn.frame_info.stream_def);
+						return;
+					}
+					def = options['stream_defs'][conn.frame_info.stream_def];
 				}
-				var o_str = options['stream_defs'][conn.frame_info.stream_def];
-				
-				var def = "pvf_loader";
-				var url = "file://Users/takuma/Downloads/ancient_8k_1024p_4mps.pvf";
 				conn.attr.pst = pstcore.pstcore_build_pstreamer(def);
-				
-				pstcore.pstcore_set_param(conn.attr.pst, "pvf_loader", "url", url);
+
 				pstcore.pstcore_set_dequeue_callback(conn.attr.pst, (data)=>{
 					//console.log("dequeue " + data.length);
 					var CHUNK_SIZE = conn.getMaxPayload() - rtp_mod.PacketHeaderLength;
@@ -522,16 +538,16 @@ async.waterfall([
 				}
 				global.window.evt_listener[name].push(callback);
 			}
-			var uuid = options["wrtc_uuid"] || uuidgen();
+			var key = options["wrtc_key"] || uuidgen();
 			console.log("\n\n\n");
-			console.log("webrtc uuid : " + uuid);
+			console.log("webrtc key : " + key);
 			console.log("\n\n\n");
 			var sig_options = {
 				host: SIGNALING_HOST,
 				port: SIGNALING_PORT,
 				secure: SIGNALING_SECURE,
 				key: P2P_API_KEY,
-				local_peer_id: uuid,
+				local_peer_id: key,
 				iceServers: [{
 					"urls": "stun:stun.l.google.com:19302"
 				},

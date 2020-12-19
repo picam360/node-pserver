@@ -1,6 +1,6 @@
 {
     "wrtc_enabled" : false,
-    "wrtc_uuid" : "",
+    "wrtc_key" : "",
     "stream_def" : "default",
     "stream_defs" : {
         "default" : "mixer"
