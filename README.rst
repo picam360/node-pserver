@@ -45,6 +45,7 @@ within the picam360-server source directory or any other build directory of your
 choice. Once this has finished successfully, run ``make`` and
 ``make install``.  In summary::
  $ sudo apt-get install cmake nodejs npm
- $ git clone https://github.com/picam360/picam360-server.git
- $ cd picam360-server
+ $ git clone https://github.com/picam360/perver.git
+ $ cd pserver
  $ cmake . && make && sudo make install
+ $ pserver -f /path/your_great_video.pvf -w your_great_key

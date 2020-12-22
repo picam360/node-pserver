@@ -15,7 +15,7 @@ var EventEmitter = require('eventemitter3');
 var util = require('util');
 //var RTCAudioSourceAlsa = require("./alsaaudio.js");
 var uuidParse = require('uuid-parse');
-var pstcore = require('pstcore-js');
+var pstcore = require('pstcore');
 
 var UPSTREAM_DOMAIN = "upstream.";
 var SERVER_DOMAIN = "";
@@ -541,6 +541,7 @@ async.waterfall([
 			var key = options["wrtc_key"] || uuidgen();
 			console.log("\n\n\n");
 			console.log("webrtc key : " + key);
+			console.log("https://vpm.picam360.com/pviewer/?wrtc-key=" + key);
 			console.log("\n\n\n");
 			var sig_options = {
 				host: SIGNALING_HOST,

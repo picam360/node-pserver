@@ -1,9 +1,14 @@
 {
- "name": "pcapture",
- "version": "0.0.1",
- "private": true,
+ "name": "node-pserver",
+ "version": "0.0.2",
  "scripts": {
   "start": "node app"
+ },
+ "author": "Takuma Hirayama <hirayama.takuma@picam360.com>",
+ "license": "MIT",
+ "repository": {
+  "type": "git",
+  "url": "git+https://github.com/picam360/node-pserver.git"
  },
  "dependencies": {
   "async": "*",
@@ -15,8 +20,7 @@
   "i2c-bus": "*",
   "moment": "*",
   "node-gpsd": "*",
-  "pstcore-js": "../pstcore/bindings/napi",
-  "serialport": "^6.2.0",
+  "pstcore": "0.0.1",
   "socket.io": "*",
   "sprintf-js": "*",
   "uuid": "~3.3.3",
