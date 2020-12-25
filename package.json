@@ -1,6 +1,9 @@
 {
  "name": "node-pserver",
- "version": "0.0.2",
+ "version": "0.0.7",
+ "bin": {
+  "pserver": "app.js"
+ },
  "scripts": {
   "start": "node app"
  },
@@ -20,7 +23,7 @@
   "i2c-bus": "*",
   "moment": "*",
   "node-gpsd": "*",
-  "pstcore": "0.0.1",
+  "pstcore": "*",
   "socket.io": "*",
   "sprintf-js": "*",
   "uuid": "~3.3.3",

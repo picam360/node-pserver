@@ -1,4 +1,5 @@
-process.chdir(__dirname);
+#! /usr/bin/env node
+//process.chdir(__dirname);
 var os = require('os');
 var disk = require('diskusage');
 var child_process = require('child_process');
@@ -92,7 +93,7 @@ var m_audio_source = null;
 
 var http = null;
 
-var options = [];
+var options = {};
 var m_pvf_filepath = null;
 
 async.waterfall([
@@ -113,22 +114,32 @@ async.waterfall([
 				i++;
 			}
 		}
-		var tmp_conf_filepath = "/tmp/picam360-server.conf.json";
-		var cmd = "grep -v -e '^\s*#' " +
-			conf_filepath + " > " + tmp_conf_filepath;
-		child_process.exec(cmd, function() {
-			console.log("load config file : " + conf_filepath);
-			options = JSON
-				.parse(fs.readFileSync(tmp_conf_filepath, 'utf8'));
-			child_process.exec("rm " + tmp_conf_filepath);
-			
+		if (fs.existsSync(conf_filepath)) {
+			var tmp_conf_filepath = "/tmp/picam360-server.conf.json";
+			var cmd = "grep -v -e '^\s*#' " +
+				conf_filepath + " > " + tmp_conf_filepath;
+			child_process.exec(cmd, function() {
+				console.log("load config file : " + conf_filepath);
+				options = JSON
+					.parse(fs.readFileSync(tmp_conf_filepath, 'utf8'));
+				child_process.exec("rm " + tmp_conf_filepath);
+				
+				if(wrtc_key){
+					options["wrtc_enabled"] = true;
+					options["wrtc_key"] = wrtc_key;
+				}
+	
+				callback(null);
+			});
+		} else {
+			options = {};
 			if(wrtc_key){
 				options["wrtc_enabled"] = true;
 				options["wrtc_key"] = wrtc_key;
 			}
-
+	
 			callback(null);
-		});
+		}
 	},
 	function(callback) { // exit sequence
 		function cleanup() {
@@ -168,7 +179,9 @@ async.waterfall([
 		config_json += "	\"plugin_paths\" : [\n";
 		config_json += "		\"plugins/pvf_loader_st.so\",\n";
 		config_json += "		\"plugins/libde265_decoder_st.so\",\n";
-		config_json += "		\"plugins/vt_decoder_st.so\",\n";
+		if(process.platform === 'darwin') {
+			config_json += "		\"plugins/vt_decoder_st.so\",\n";
+		}
 		config_json += "		\"plugins/pgl_renderer_st.so\"\n";
 		config_json += "	]\n";
 		config_json += "}\n";
@@ -370,20 +383,24 @@ async.waterfall([
 	},
 	function(callback) { // gc
 		console.log("gc");
-		var disk_free = 0;
-		setInterval(function() {
-			disk.check('/tmp', function(err, info) {
-				disk_free = info.available;
-			});
-		}, 1000);
-		setInterval(function() {
-			if (global.gc && os.freemem() < GC_THRESH) {
-				console.log("gc : free=" + os.freemem() + " usage=" +
-					process.memoryUsage().rss);
-				console.log("disk_free=" + disk_free);
-				global.gc();
-			}
-		}, 100);
+		if(process.platform === 'win32') {
+		}else if(process.platform === 'darwin') {
+		}else if(process.platform === 'linux') {
+			var disk_free = 0;
+			setInterval(function() {
+				disk.check('/tmp', function(err, info) {
+					disk_free = info.available;
+				});
+			}, 1000);
+			setInterval(function() {
+				if (global.gc && os.freemem() < GC_THRESH) {
+					console.log("gc : free=" + os.freemem() + " usage=" +
+						process.memoryUsage().rss);
+					console.log("disk_free=" + disk_free);
+					global.gc();
+				}
+			}, 100);
+		}
 		callback(null);
 	},
 	function(callback) { // start up websocket server
@@ -541,7 +558,7 @@ async.waterfall([
 			var key = options["wrtc_key"] || uuidgen();
 			console.log("\n\n\n");
 			console.log("webrtc key : " + key);
-			console.log("https://vpm.picam360.com/pviewer/?wrtc-key=" + key);
+			console.log("https://picam360.github.io/pviewer/?wrtc-key=" + key);
 			console.log("\n\n\n");
 			var sig_options = {
 				host: SIGNALING_HOST,
@@ -576,30 +593,11 @@ async.waterfall([
 					sig.start_ping();
 				});
 				sig.onrequestoffer = function(request) {
-					var video_source = null;
 					var pc = new global.window.RTCPeerConnection({
 						sdpSemantics: 'unified-plan',
 						iceServers: sig_options.iceServers,
 					});
 					pc_map[request.src] = pc;
-
-					if (options.audio_device && !m_audio_source) {
-						console.log('audio opened');
-						m_audio_source = new RTCAudioSourceAlsa({
-							channelCount: 2,
-							device: options.audio_device,
-						});
-					}
-					if (m_audio_source) { // audio
-						var track = m_audio_source.createTrack(request.src);
-						pc.addTransceiver(track);
-					}
-					{ // video
-						console.log('video opened');
-						video_source = new global.window.nonstandard.RTCVideoSource();
-						var track = video_source.createTrack();
-						pc.addTransceiver(track);
-					}
 
 					var dc = pc.createDataChannel('data');
 					dc.onopen = function() {
@@ -632,9 +630,6 @@ async.waterfall([
 									this.close();
 								}
 							}
-							add_frame(i420Frame) {
-								video_source.onFrame(i420Frame);
-							}
 							close() {
 								dc.close();
 								pc.close();
@@ -648,31 +643,6 @@ async.waterfall([
 					pc.createOffer().then(function(sdp) {
 						console.log('setLocalDescription');
 						pc.setLocalDescription(sdp);
-						var lines = sdp.sdp.split('\r\n');
-						for (var i = 0; i < lines.length; i++) {
-							// //h264
-							// if(lines[i].startsWith('a=rtpmap:96 VP8/90000')){
-							// lines[i] = lines[i].replace(
-							// 'a=rtpmap:96 VP8/90000',
-							// 'a=rtpmap:107 H264/90000\r\n' +
-							// 'a=rtpmap:96 VP8/90000');
-							// }
-							// //vp9
-							// if(lines[i].startsWith('m=video 9')){
-							// lines[i] = lines[i].replace(
-							// 'm=video 9 UDP/TLS/RTP/SAVPF 96 97 98 99 100 101 127',
-							// 'm=video 9 UDP/TLS/RTP/SAVPF 107 98 96 97 99 100 101 127');
-							// }
-							// bitrate
-							if (lines[i].startsWith('m=video 9')) {
-								if (options.frame_bitrate) {
-									lines[i] = lines[i] + '\r\n' +
-										'b=AS:' + options.frame_bitrate;
-								}
-							}
-						}
-						sdp.sdp = lines.join('\r\n');
-
 						sig.offer(request.src, sdp);
 					}).catch(function(err) {
 						console.log('failed offering:' +

@@ -24,6 +24,6 @@ if [ ! -f "/var/www/pserver/${ARCH}/www/config.json" ]; then
 	cp www/config.json.tmp /var/www/pserver/${ARCH}/www/config.json
 fi
 
-systemctl daemon-reload
-systemctl start pserver.service
-systemctl enable pserver.service
+#systemctl daemon-reload
+#systemctl start pserver.service
+#systemctl enable pserver.service
