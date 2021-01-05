@@ -16,7 +16,7 @@ var EventEmitter = require('eventemitter3');
 var util = require('util');
 //var RTCAudioSourceAlsa = require("./alsaaudio.js");
 var uuidParse = require('uuid-parse');
-var pstcore = require('pstcore');
+var pstcore = require('node-pstcore');
 
 var UPSTREAM_DOMAIN = "upstream.";
 var SERVER_DOMAIN = "";
