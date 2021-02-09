@@ -16,6 +16,8 @@ var EventEmitter = require('eventemitter3');
 var util = require('util');
 //var RTCAudioSourceAlsa = require("./alsaaudio.js");
 var uuidParse = require('uuid-parse');
+var macaddress = require('macaddress');
+
 var pstcore = require('node-pstcore');
 
 var UPSTREAM_DOMAIN = "upstream.";
@@ -173,6 +175,24 @@ async.waterfall([
 		callback(null);
 	},
 	function(callback) {
+		console.log("init license");
+		if(options["license"] && options["license"]["app_key"]){
+			macaddress.one(options["license"]["iface"], (err, mac) => {
+				var cmd = sprintf("node license_retriever %s %s %s",
+					options["license"]["app_key"], "license.txt", mac);
+				child_process.exec(cmd);
+				
+				const json = JSON.parse(fs.readFileSync('license.txt', 'utf8'));
+				json["iface"] = options["license"]["iface"];
+				fs.writeFileSync('license.txt', JSON.stringify(json, null, "\t"));
+				
+				callback(null);
+			});
+		}else{
+			callback(null);
+		}
+	},
+	function(callback) {
 		console.log("init pstcore");
 		var config_json = "";
 		config_json += "{\n";
@@ -182,7 +202,9 @@ async.waterfall([
 		if(process.platform === 'darwin') {
 			config_json += "		\"plugins/vt_decoder_st.so\",\n";
 		}
-		config_json += "		\"plugins/pgl_renderer_st.so\"\n";
+		config_json += "		\"plugins/pgl_renderer_st.so\",\n";
+		config_json += "		\"plugins/pgl_remapper_st.so\",\n";
+		config_json += "		\"plugins/pipe_st.so\"\n";
 		config_json += "	]\n";
 		config_json += "}\n";
 		pstcore.pstcore_init(config_json);
@@ -219,6 +241,7 @@ async.waterfall([
 					console.log("connection closed : " +
 						rtp_rx_conns[i].attr.ip);
 					clearInterval(conn.attr.timer);
+					clearInterval(conn.attr.timer2);
 					conn.close();
 					if(conn.attr.pst){
 						pstcore.pstcore_destroy_pstreamer(conn.attr.pst);
@@ -315,19 +338,30 @@ async.waterfall([
 					}
 				});
 			}).then(() => {
-				var def;
 				if(m_pvf_filepath){
-					def = "pvf_loader url=\"file:/" + m_pvf_filepath + "\"";
+					var def = "pvf_loader url=\"file:/" + m_pvf_filepath + "\"";
+					conn.attr.pst = pstcore.pstcore_build_pstreamer(def);
 				}else{
 					if (!options['stream_defs'] || !options['stream_defs'][conn.frame_info.stream_def]) {
 						console.log("no stream definition : " + conn.frame_info.stream_def);
 						return;
 					}
-					def = options['stream_defs'][conn.frame_info.stream_def];
+					var def = options['stream_defs'][conn.frame_info.stream_def];
+					conn.attr.pst = pstcore.pstcore_build_pstreamer(def);
+					if(options['stream_params'] && options['stream_params'][conn.frame_info.stream_def]) {
+						for(var key in options['stream_params'][conn.frame_info.stream_def]) {
+							var [name, param] = key.split('.');
+							var value = options['stream_params'][conn.frame_info.stream_def][key];
+							if(!name || !param || !value){
+								continue;
+							}
+							pstcore.pstcore_set_param(conn.attr.pst, name, param, value);
+						}
+					}
 				}
-				conn.attr.pst = pstcore.pstcore_build_pstreamer(def);
 
 				pstcore.pstcore_set_dequeue_callback(conn.attr.pst, (data)=>{
+					conn.attr.transmitbytes += data.length;
 					//console.log("dequeue " + data.length);
 					var CHUNK_SIZE = conn.getMaxPayload() - rtp_mod.PacketHeaderLength;
 					for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
@@ -366,6 +400,16 @@ async.waterfall([
 						rtp_mod.remove_conn(conn);
 					}
 				}, 33);
+				
+				conn.attr.transmitbytes = 0;
+				conn.attr.timer2 = setInterval(()=>{
+					if(conn.attr.transmitbytes == 0){
+						return;
+					}
+					console.log(8*conn.attr.transmitbytes/1000);
+					conn.attr.transmitbytes=0;
+				},1000);
+				
 				rtp.set_callback(function(packet) {
 					conn.attr.timeout = new Date().getTime();
 					if (packet.GetPayloadType() == PT_SET_PARAM) { // set_param
