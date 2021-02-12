@@ -180,7 +180,7 @@ async.waterfall([
 	function(callback) {
 		console.log("init license");
 		var cmd = sprintf("node license_retriever %s %s %s",
-			options["license"]["app_key"], "license.txt", options["license"]["iface"]);
+			options["license"]["app_key"], "license_key.json", options["license"]["iface"]);
 		child_process.exec(cmd);
 		
 		callback(null);
