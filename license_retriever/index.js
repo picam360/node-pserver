@@ -1,13 +1,26 @@
 const fs = require('fs');
 var xmlhttprequest = require('xmlhttprequest');
 global.XMLHttpRequest = xmlhttprequest.XMLHttpRequest;
+var macaddress = require('macaddress');
 
 var options = {};
 options.app_key = process.argv[2];
 options.output_path = process.argv[3];
-options.device_id = process.argv[4];
+options.iface = process.argv[4];
+options.device_id = "";
 options.product_name = "PICAM360_ADVANCED_FEATURE_LICENSE";
 
+var interfaces = macaddress.networkInterfaces();
+if(!interfaces[options.iface]){
+	console.log("no interface : " + interfaces[options.iface]);
+    process.exit(-1);
+}else if(!interfaces[options.iface]["mac"]){
+	console.log("no macaddress : " + interfaces[options.iface]);
+    process.exit(-1);
+}else{
+	options.device_id = interfaces[options.iface]["mac"];
+}
+			
 if (options.app_key == "" && fs.existsSync('config.json')) {
 	console.log('loading config...');
 	options = JSON.parse(fs.readFileSync('config.json', 'utf8'));
@@ -32,6 +45,7 @@ xhr.addEventListener("readystatechange", function() {
 			console.log(license.error, license.message);
 			return;
 		} else if (license.license_key && license.signature) {
+			license["iface"] = options.iface;
 			fs.writeFileSync(options.output_path, JSON.stringify(license, null,
 					'\t'));
 			console.log("succeeded!");

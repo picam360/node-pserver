@@ -16,7 +16,6 @@ var EventEmitter = require('eventemitter3');
 var util = require('util');
 //var RTCAudioSourceAlsa = require("./alsaaudio.js");
 var uuidParse = require('uuid-parse');
-var macaddress = require('macaddress');
 
 var pstcore = require('node-pstcore');
 
@@ -97,6 +96,7 @@ var http = null;
 
 var options = {};
 var m_pvf_filepath = null;
+var m_calibrate = null;
 
 async.waterfall([
 	function(callback) { // argv
@@ -114,6 +114,9 @@ async.waterfall([
 			if (process.argv[i] == "-w") {
 				wrtc_key = process.argv[i + 1];
 				i++;
+			}
+			if (process.argv[i].startsWith("--calibrate=")) {
+				m_calibrate = process.argv[i].split("=")[1];
 			}
 		}
 		if (fs.existsSync(conf_filepath)) {
@@ -176,21 +179,11 @@ async.waterfall([
 	},
 	function(callback) {
 		console.log("init license");
-		if(options["license"] && options["license"]["app_key"]){
-			macaddress.one(options["license"]["iface"], (err, mac) => {
-				var cmd = sprintf("node license_retriever %s %s %s",
-					options["license"]["app_key"], "license.txt", mac);
-				child_process.exec(cmd);
-				
-				const json = JSON.parse(fs.readFileSync('license.txt', 'utf8'));
-				json["iface"] = options["license"]["iface"];
-				fs.writeFileSync('license.txt', JSON.stringify(json, null, "\t"));
-				
-				callback(null);
-			});
-		}else{
-			callback(null);
-		}
+		var cmd = sprintf("node license_retriever %s %s %s",
+			options["license"]["app_key"], "license.txt", options["license"]["iface"]);
+		child_process.exec(cmd);
+		
+		callback(null);
 	},
 	function(callback) {
 		console.log("init pstcore");
@@ -204,6 +197,7 @@ async.waterfall([
 		}
 		config_json += "		\"plugins/pgl_renderer_st.so\",\n";
 		config_json += "		\"plugins/pgl_remapper_st.so\",\n";
+		config_json += "		\"plugins/pgl_calibrator_st.so\",\n";
 		config_json += "		\"plugins/pipe_st.so\"\n";
 		config_json += "	]\n";
 		config_json += "}\n";
@@ -213,7 +207,23 @@ async.waterfall([
 			pstcore.pstcore_poll_events();
 		}, 33);
 		
-		callback(null);
+		if(m_calibrate){
+			var [size, device] = m_calibrate.split("@");
+			var def = "pipe name=capture t=I420 s=" + size + " ! pgl_calibrator w=1024 h=512";
+			var pst = pstcore.pstcore_build_pstreamer(def);
+            if(process.platform==='darwin'){
+                var pipe_def = "/usr/local/bin/ffmpeg -f avfoundation -s @OWIDTH@x@OHEIGHT@ -r 15 -i \""
+								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
+                pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
+
+                var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
+                pstcore.pstcore_set_param(pst, "capture", "meta", meta);
+            }
+			pstcore.pstcore_start_pstreamer(pst);
+			//don't call callback(null);
+		}else{
+			callback(null);
+		}
 	},
 	function(callback) {
 		console.log("init data stream");
