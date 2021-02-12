@@ -1,6 +1,6 @@
 {
  "name": "node-pserver",
- "version": "0.0.16",
+ "version": "0.0.17",
  "bin": {
   "pserver": "app.js"
  },
@@ -30,6 +30,6 @@
   "wrtc": "^0.4.6",
   "macaddress": "^0.5.1",
   "xmlhttprequest": "^1.8.0",
-  "node-pstcore": "0.0.13"
+  "node-pstcore": "0.0.14"
  }
 }
