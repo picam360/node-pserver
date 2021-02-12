@@ -33,6 +33,7 @@ package-lock.json
 config.json
 www
 license.txt
+lens_params.json
 
 #cmake
 Makefile
