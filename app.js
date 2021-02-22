@@ -178,10 +178,12 @@ async.waterfall([
 		callback(null);
 	},
 	function(callback) {
-		console.log("init license");
-		var cmd = sprintf("node license_retriever %s %s %s",
-			options["license"]["app_key"], "license_key.json", options["license"]["iface"]);
-		child_process.exec(cmd);
+		if(options["license"] && options["license"]["app_key"]){
+			console.log("init license");
+			var cmd = sprintf("node license_retriever %s %s %s",
+				options["license"]["app_key"], "license_key.json", options["license"]["iface"]);
+			child_process.exec(cmd);
+		}
 		
 		callback(null);
 	},
@@ -213,6 +215,14 @@ async.waterfall([
 			var pst = pstcore.pstcore_build_pstreamer(def);
             if(process.platform==='darwin'){
                 var pipe_def = "/usr/local/bin/ffmpeg -f avfoundation -s @OWIDTH@x@OHEIGHT@ -r 15 -i \""
+								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
+                pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
+
+                var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
+                pstcore.pstcore_set_param(pst, "capture", "meta", meta);
+            }
+            else if(process.platform==='linux'){
+                var pipe_def = "ffmpeg -f video4linux2 -s @OWIDTH@x@OHEIGHT@ -r 15 -i \""
 								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
                 pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
 
