@@ -120,7 +120,12 @@ async.waterfall([
 			}
 		}
 		if (fs.existsSync(conf_filepath)) {
-			var tmp_conf_filepath = "/tmp/picam360-server.conf.json";
+			var tmp_conf_filepath;
+            if(process.platform==='win32'){
+            	tmp_conf_filepath = "c:/tmp/picam360-server.conf.json";
+            }else{
+            	tmp_conf_filepath = "/tmp/picam360-server.conf.json";
+            }
 			var cmd = "grep -v -e '^\s*#' " +
 				conf_filepath + " > " + tmp_conf_filepath;
 			child_process.exec(cmd, function() {
@@ -210,11 +215,13 @@ async.waterfall([
 		}, 33);
 		
 		if(m_calibrate){
-			var [size, device] = m_calibrate.split("@");
+			var [size_, device] = m_calibrate.split(":");
+			var [size, framerate] = size_.split("@");
+			var framerate_str = framerate ? " -r " + framerate : "";
 			var def = "pipe name=capture t=I420 s=" + size + " ! pgl_calibrator w=1024 h=512";
 			var pst = pstcore.pstcore_build_pstreamer(def);
             if(process.platform==='darwin'){
-                var pipe_def = "/usr/local/bin/ffmpeg -f avfoundation -s @OWIDTH@x@OHEIGHT@ -r 15 -i \""
+                var pipe_def = "/usr/local/bin/ffmpeg -f avfoundation -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i \""
 								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
                 pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
 
@@ -222,7 +229,15 @@ async.waterfall([
                 pstcore.pstcore_set_param(pst, "capture", "meta", meta);
             }
             else if(process.platform==='linux'){
-                var pipe_def = "ffmpeg -f video4linux2 -s @OWIDTH@x@OHEIGHT@ -r 15 -i \""
+                var pipe_def = "ffmpeg -f video4linux2 -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i \""
+								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
+                pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
+
+                var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
+                pstcore.pstcore_set_param(pst, "capture", "meta", meta);
+            }
+            else if(process.platform==='win32'){
+                var pipe_def = "ffmpeg -f dshow -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i video=\""
 								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
                 pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
 
