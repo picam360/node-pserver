@@ -122,7 +122,7 @@ async.waterfall([
 		if (fs.existsSync(conf_filepath)) {
 			var tmp_conf_filepath;
             if(process.platform==='win32'){
-            	tmp_conf_filepath = "c:/tmp/picam360-server.conf.json";
+            	tmp_conf_filepath = "c:/msys64/tmp/picam360-server.conf.json";
             }else{
             	tmp_conf_filepath = "/tmp/picam360-server.conf.json";
             }
@@ -187,6 +187,7 @@ async.waterfall([
 			console.log("init license");
 			var cmd = sprintf("node license_retriever %s %s %s",
 				options["license"]["app_key"], "license_key.json", options["license"]["iface"]);
+			//console.log(cmd);
 			child_process.exec(cmd);
 		}
 		

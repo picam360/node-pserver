@@ -45,7 +45,11 @@ xhr.addEventListener("readystatechange", function() {
 			console.log(license.error, license.message);
 			return;
 		} else if (license.license_key && license.signature) {
-			license["iface"] = options.iface;
+            if(process.platform==='win32'){
+				license["iface"] = options.device_id;
+			}else{
+				license["iface"] = options.iface;
+			}
 			fs.writeFileSync(options.output_path, JSON.stringify(license, null,
 					'\t'));
 			console.log("succeeded!");
