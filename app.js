@@ -202,6 +202,12 @@ async.waterfall([
 		config_json += "		\"plugins/libde265_decoder_st.so\",\n";
 		if(process.platform === 'darwin') {
 			config_json += "		\"plugins/vt_decoder_st.so\",\n";
+		}else if(process.platform === 'linux') {
+			config_json += "        \"plugins/pcuda_remapper_st.so\",\n";
+			config_json += "        \"plugins/v4l2_capture_st.so\",\n";
+			config_json += "        \"plugins/mjpeg_tegra_decoder_st.so\",\n";
+			config_json += "        \"plugins/mux_st.so\",\n";
+			config_json += "        \"plugins/demux_st.so\",\n";
 		}
 		config_json += "		\"plugins/pgl_renderer_st.so\",\n";
 		config_json += "		\"plugins/pgl_remapper_st.so\",\n";
@@ -386,7 +392,9 @@ async.waterfall([
 					conn.attr.pst = pstcore.pstcore_build_pstreamer(def);
 					if(options['stream_params'] && options['stream_params'][conn.frame_info.stream_def]) {
 						for(var key in options['stream_params'][conn.frame_info.stream_def]) {
-							var [name, param] = key.split('.');
+							var dotpos = key.lastIndexOf(".");
+							var name = key.substr(0, dotpos);
+							var param = key.substr(dotpos + 1);
 							var value = options['stream_params'][conn.frame_info.stream_def][key];
 							if(!name || !param || !value){
 								continue;
