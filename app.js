@@ -405,6 +405,9 @@ async.waterfall([
 				}
 
 				pstcore.pstcore_set_dequeue_callback(conn.attr.pst, (data)=>{
+					if(data == null){//eob
+						return;
+					}
 					conn.attr.transmitbytes += data.length;
 					//console.log("dequeue " + data.length);
 					var CHUNK_SIZE = conn.getMaxPayload() - rtp_mod.PacketHeaderLength;
