@@ -1,6 +1,6 @@
 {
  "name": "node-pserver",
- "version": "0.0.22",
+ "version": "0.0.23",
  "bin": {
   "pserver": "app.js"
  },
