@@ -6,9 +6,9 @@ var macaddress = require('macaddress');
 var options = {};
 options.app_key = process.argv[2];
 options.output_path = process.argv[3];
-options.iface = process.argv[4];
+options.sku = process.argv[4];
+options.iface = process.argv[5];
 options.device_id = "";
-options.product_name = "PICAM360_ADVANCED_FEATURE_LICENSE";
 
 var interfaces = macaddress.networkInterfaces();
 if(!interfaces[options.iface]){
@@ -61,6 +61,6 @@ xhr.addEventListener("readystatechange", function() {
 });
 
 xhr.open("GET", "https://park.picam360.com/api/v1/" + options.app_key
-		+ "/licenses/" + options.product_name + "/file/text?device_id="
+		+ "/licenses/" + options.sku + "/file/text?device_id="
 		+ options.device_id);
 xhr.send();
