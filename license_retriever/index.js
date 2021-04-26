@@ -5,8 +5,8 @@ var macaddress = require('macaddress');
 
 var options = {};
 options.app_key = process.argv[2];
-options.output_path = process.argv[3];
-options.sku = process.argv[4];
+options.sku = process.argv[3];
+options.output_path = process.argv[4];
 options.iface = process.argv[5];
 options.device_id = "";
 

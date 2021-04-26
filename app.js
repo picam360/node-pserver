@@ -186,7 +186,7 @@ async.waterfall([
 		if(options["license"] && options["license"]["app_key"]){
 			console.log("init license");
 			var cmd = sprintf("node license_retriever %s %s %s",
-				options["license"]["app_key"], "license_key.json", options["license"]["iface"]);
+				options["license"]["app_key"], options["license"]["sku"], "license_key.json", options["license"]["iface"]);
 			//console.log(cmd);
 			child_process.exec(cmd);
 		}
