@@ -400,6 +400,9 @@ async.waterfall([
 								continue;
 							}
 							pstcore.pstcore_set_param(conn.attr.pst, name, param, value);
+
+							var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", name, param, value.replace(/"/g, '\\"'));
+							conn.attr.param_pendings.push(msg);
 						}
 					}
 				}
@@ -462,9 +465,13 @@ async.waterfall([
 					if (packet.GetPayloadType() == PT_SET_PARAM) { // set_param
 						var str = (new TextDecoder)
 							.decode(packet.GetPayload());
-						var list = JSON.parse(str);
-						for(var ary of list){
-							pstcore.pstcore_set_param(conn.attr.pst, ary[0], ary[1], ary[2]);
+						try{
+							var list = JSON.parse(str);
+							for(var ary of list){
+								pstcore.pstcore_set_param(conn.attr.pst, ary[0], ary[1], ary[2]);
+							}
+						}catch{
+							console.log("fail parse json", str);
 						}
 					}
 				});
