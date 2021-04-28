@@ -425,7 +425,7 @@ async.waterfall([
 					}
 				});
 		
-				pstcore.pstcore_add_set_param_done_callback((msg)=>{
+				pstcore.pstcore_add_set_param_done_callback(conn.attr.pst, (msg)=>{
 					//console.log("set_param " + msg);
 					conn.attr.param_pendings.push(msg);
 				});
