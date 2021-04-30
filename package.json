@@ -5,7 +5,7 @@
   "pserver": "app.js"
  },
  "scripts": {
-  "start": "node app"
+  "install": "node setup.js"
  },
  "author": "Takuma Hirayama <hirayama.takuma@picam360.com>",
  "license": "MIT",
@@ -30,6 +30,8 @@
   "wrtc": "^0.4.6",
   "macaddress": "^0.5.1",
   "xmlhttprequest": "^1.8.0",
+  "rimraf": "*",
+  "python-shell": "*",
   "node-pstcore": "0.0.28"
  }
 }

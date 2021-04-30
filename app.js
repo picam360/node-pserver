@@ -282,6 +282,8 @@ async.waterfall([
 				if (rtp_rx_conns[i] === conn) {
 					console.log("connection closed : " +
 						rtp_rx_conns[i].attr.ip);
+					rtp_rx_conns.splice(i, 1);
+
 					clearInterval(conn.attr.timer);
 					clearInterval(conn.attr.timer2);
 					conn.close();
@@ -289,8 +291,7 @@ async.waterfall([
 						pstcore.pstcore_destroy_pstreamer(conn.attr.pst);
 						conn.attr.pst = 0;
 					}
-
-					rtp_rx_conns.splice(i, 1);
+					return;
 				}
 			}
 		};
@@ -337,6 +338,7 @@ async.waterfall([
 				param_pendings: [],
 			};
 			var rtp = rtp_mod.Rtp(conn);
+			conn.rtp = rtp;
 			new Promise((resolve, reject) => {
 				rtp.set_callback(function(packet) {
 					conn.attr.timeout = new Date().getTime();
@@ -405,6 +407,17 @@ async.waterfall([
 							conn.attr.param_pendings.push(msg);
 						}
 					}
+					if(options['pviewer_config_ext']) {
+						fs.readFile(options['pviewer_config_ext'], 'utf8', function(err, data_str) {
+							if (err) {
+								console.log("err :" + err);
+							} else {
+								var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", 
+									"network", "pviewer_config_ext", data_str.replace(/\n/g, '\\n').replace(/"/g, '\\"'));
+								conn.attr.param_pendings.push(msg);
+							}
+						});
+					}
 				}
 
 				pstcore.pstcore_set_dequeue_callback(conn.attr.pst, (data)=>{
@@ -472,6 +485,16 @@ async.waterfall([
 							}
 						}catch{
 							console.log("fail parse json", str);
+						}
+					}else if (packet.GetPayloadType() == PT_CMD) {
+						var cmd = packet.GetPacketData().toString('ascii', packet
+							.GetHeaderLength());
+						var split = cmd.split('\"');
+						var id = split[1];
+						var value = split[3];
+						plugin_host.send_command(value, conn);
+						if (options.debug >= 5) {
+							console.log("cmd got :" + cmd);
 						}
 					}
 				});
@@ -905,8 +928,8 @@ async.waterfall([
 				buffer.writeUInt16BE(header.length, 0);
 				header.copy(buffer, 2);
 				data.copy(buffer, 2 + header.length, i, i + length);
-//				var pack = rtp.build_packet(buffer, PT_FILE);
-//				rtp.sendpacket(pack);
+				var pack = conn.rtp.build_packet(buffer, PT_FILE);
+				conn.rtp.sendpacket(pack);
 			}
 		}
 
