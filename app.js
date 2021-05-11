@@ -439,6 +439,9 @@ async.waterfall([
 		
 				pstcore.pstcore_add_set_param_done_callback(conn.attr.pst, (msg)=>{
 					//console.log("set_param " + msg);
+					if(conn.attr.in_pt_set_param){//prevent loop back
+						return;
+					}
 					conn.attr.param_pendings.push(msg);
 				});
 				pstcore.pstcore_start_pstreamer(conn.attr.pst);
@@ -480,7 +483,9 @@ async.waterfall([
 						try{
 							var list = JSON.parse(str);
 							for(var ary of list){
+								conn.attr.in_pt_set_param = true;
 								pstcore.pstcore_set_param(conn.attr.pst, ary[0], ary[1], ary[2]);
+								conn.attr.in_pt_set_param = false;
 							}
 						}catch{
 							console.log("fail parse json", str);
