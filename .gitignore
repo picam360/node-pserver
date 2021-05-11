@@ -45,5 +45,5 @@ package-lock.json
 www
 
 *config.json
-lens_params.json
+lens_params*.json
 license_key.json
