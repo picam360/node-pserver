@@ -119,28 +119,27 @@ async.waterfall([
 				m_calibrate = process.argv[i].split("=")[1];
 			}
 		}
+		if (!fs.existsSync(conf_filepath)) {
+			conf_filepath = __dirname + "/" + conf_filepath;
+		}
 		if (fs.existsSync(conf_filepath)) {
-			var tmp_conf_filepath;
-            if(process.platform==='win32'){
-            	tmp_conf_filepath = "c:/msys64/tmp/picam360-server.conf.json";
-            }else{
-            	tmp_conf_filepath = "/tmp/picam360-server.conf.json";
-            }
-			var cmd = "grep -v -e '^\s*#' " +
-				conf_filepath + " > " + tmp_conf_filepath;
-			child_process.exec(cmd, function() {
-				console.log("load config file : " + conf_filepath);
-				options = JSON
-					.parse(fs.readFileSync(tmp_conf_filepath, 'utf8'));
-				child_process.exec("rm " + tmp_conf_filepath);
-				
-				if(wrtc_key){
-					options["wrtc_enabled"] = true;
-					options["wrtc_key"] = wrtc_key;
+			console.log("load config file : " + conf_filepath);
+			
+			var lines = fs.readFileSync(conf_filepath, 'utf-8').replace(/\r/g, '').split('\n')
+			for(var i=0;i<lines.length;i++){
+				if(lines[i][0] == '#'){
+					lines[i] = "";
 				}
-	
-				callback(null);
-			});
+			}
+			var json_str = lines.join("\n");
+			options = JSON.parse(json_str);
+
+			if(wrtc_key){
+				options["wrtc_enabled"] = true;
+				options["wrtc_key"] = wrtc_key;
+			}
+
+			callback(null);
 		} else {
 			options = {};
 			if(wrtc_key){
