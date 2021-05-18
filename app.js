@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-//process.chdir(__dirname);
+process.chdir(__dirname);
 var os = require('os');
 var disk = require('diskusage');
 var child_process = require('child_process');
@@ -102,17 +102,23 @@ async.waterfall([
 	function(callback) { // argv
 		var wrtc_key = null;
 		var conf_filepath = 'config.json';
+		var params = {};
 		for (var i = 0; i < process.argv.length; i++) {
-			if (process.argv[i] == "-c") {
+			if (process.argv[i] == "-c") {//config
 				conf_filepath = process.argv[i + 1];
 				i++;
 			}
-			if (process.argv[i] == "-f") {
+			if (process.argv[i] == "-f") {//file
 				m_pvf_filepath = process.argv[i + 1];
 				i++;
 			}
-			if (process.argv[i] == "-w") {
+			if (process.argv[i] == "-w") {//wrtc or ws
 				wrtc_key = process.argv[i + 1];
+				i++;
+			}
+			if (process.argv[i] == "-p") {//params
+				var [key, value] = process.argv[i + 1].split("=");
+				params[key] = value;
 				i++;
 			}
 			if (process.argv[i].startsWith("--calibrate=")) {
@@ -133,22 +139,16 @@ async.waterfall([
 			}
 			var json_str = lines.join("\n");
 			options = JSON.parse(json_str);
-
-			if(wrtc_key){
-				options["wrtc_enabled"] = true;
-				options["wrtc_key"] = wrtc_key;
-			}
-
-			callback(null);
 		} else {
 			options = {};
-			if(wrtc_key){
-				options["wrtc_enabled"] = true;
-				options["wrtc_key"] = wrtc_key;
-			}
-	
-			callback(null);
 		}
+		if(wrtc_key){
+			options["wrtc_enabled"] = true;
+			options["wrtc_key"] = wrtc_key;
+		}
+		options["params"] = Object.assign(options["params"]||{}, params);
+
+		callback(null);
 	},
 	function(callback) { // exit sequence
 		function cleanup() {
@@ -390,6 +390,9 @@ async.waterfall([
 						return;
 					}
 					var def = options['stream_defs'][conn.frame_info.stream_def];
+					for(var key in options['params']) {
+						def = def.replace(new RegExp("@" + key + "@", "g"), options['params'][key]);
+					}
 					conn.attr.pst = pstcore.pstcore_build_pstreamer(def);
 					if(options['stream_params'] && options['stream_params'][conn.frame_info.stream_def]) {
 						for(var key in options['stream_params'][conn.frame_info.stream_def]) {
@@ -397,6 +400,9 @@ async.waterfall([
 							var name = key.substr(0, dotpos);
 							var param = key.substr(dotpos + 1);
 							var value = options['stream_params'][conn.frame_info.stream_def][key];
+							for(var key in options['params']) {
+								value = value.replace(new RegExp("@" + key + "@", "g"), options['params'][key]);
+							}
 							if(!name || !param || !value){
 								continue;
 							}
