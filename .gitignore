@@ -38,6 +38,7 @@ cmake_install.cmake
 .DS_Store
 .snipet
 .settings
+.vscode
 
 userdata
 node_modules
