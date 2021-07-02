@@ -431,7 +431,8 @@ async.waterfall([
 					}
 					conn.attr.transmitbytes += data.length;
 					//console.log("dequeue " + data.length);
-					var CHUNK_SIZE = conn.getMaxPayload() - rtp_mod.PacketHeaderLength;
+					var MAX_PAYLOAD = conn.getMaxPayload() || 16*1024;//16k is webrtc max
+					var CHUNK_SIZE = MAX_PAYLOAD - rtp_mod.PacketHeaderLength;
 					for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
 						var chunk = data.slice(cur, cur + CHUNK_SIZE);
 						var pack = rtp.build_packet(chunk, PT_ENQUEUE);
