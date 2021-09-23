@@ -200,6 +200,8 @@ async.waterfall([
 		config_json += "		\"plugins/pvf_loader_st.so\",\n";
 		config_json += "		\"plugins/libde265_decoder_st.so\",\n";
 		config_json += "		\"plugins/recorder_st.so\",\n";
+		config_json += "        \"plugins/tc_capture_st.so\",\n";
+		config_json += "        \"plugins/nc_capture_st.so\",\n";
 		if(process.platform === 'darwin') {
 			config_json += "		\"plugins/vt_decoder_st.so\",\n";
 		}else if(process.platform === 'linux') {
@@ -208,6 +210,7 @@ async.waterfall([
 			config_json += "        \"plugins/mjpeg_tegra_decoder_st.so\",\n";
 			config_json += "        \"plugins/mux_st.so\",\n";
 			config_json += "        \"plugins/demux_st.so\",\n";
+			config_json += "        \"plugins/icm20948_st.so\",\n";
 		}else if(process.platform === 'win32') {
 			config_json += "        \"plugins/pcuda_remapper_st.so\",\n";
 			config_json += "        \"plugins/mjpeg_decoder_st.so\",\n";
@@ -231,6 +234,7 @@ async.waterfall([
 			var [size, framerate] = size_.split("@");
 			var framerate_str = framerate ? " -r " + framerate : "";
 			var def = "pipe name=capture t=I420 s=" + size + " ! pgl_calibrator w=1024 h=512";
+			//var def = "tc_capture name=capture debayer=1 expo=20000 gain=1000 binning=2 ! pgl_calibrator w=1024 h=512";
 			var pst = pstcore.pstcore_build_pstreamer(def);
             if(process.platform==='darwin'){
                 var pipe_def = "/usr/local/bin/ffmpeg -f avfoundation -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i \""
