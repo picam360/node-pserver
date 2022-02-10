@@ -297,6 +297,15 @@ async.waterfall([
 					clearInterval(conn.attr.timer2);
 					conn.close();
 					if(conn.attr.pst){
+
+						//let plugins know pst destroyed
+						for (var i = 0; i < plugins.length; i++) {
+							if (plugins[i].command_handler) {
+								plugins[i].pst_destroyed(conn.attr.pst);
+								break;
+							}
+						}
+
 						pstcore.pstcore_destroy_pstreamer(conn.attr.pst);
 						conn.attr.pst = 0;
 					}
@@ -457,6 +466,14 @@ async.waterfall([
 						rtp_mod.remove_conn(conn);
 					}
 				});
+
+				//let plugins know pst created
+				for (var i = 0; i < plugins.length; i++) {
+					if (plugins[i].command_handler) {
+						plugins[i].pst_created(conn.attr.pst);
+						break;
+					}
+				}
 		
 				pstcore.pstcore_add_set_param_done_callback(conn.attr.pst, (msg)=>{
 					//console.log("set_param " + msg);
