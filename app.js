@@ -300,8 +300,8 @@ async.waterfall([
 
 						//let plugins know pst destroyed
 						for (var i = 0; i < plugins.length; i++) {
-							if (plugins[i].command_handler) {
-								plugins[i].pst_destroyed(conn.attr.pst);
+							if (plugins[i].pst_stopped) {
+								plugins[i].pst_stopped(pstcore, conn.attr.pst);
 								break;
 							}
 						}
@@ -469,8 +469,8 @@ async.waterfall([
 
 				//let plugins know pst created
 				for (var i = 0; i < plugins.length; i++) {
-					if (plugins[i].command_handler) {
-						plugins[i].pst_created(conn.attr.pst);
+					if (plugins[i].pst_started) {
+						plugins[i].pst_started(pstcore, conn.attr.pst);
 						break;
 					}
 				}
@@ -1007,6 +1007,7 @@ async.waterfall([
 				filerequest_handler(filerequest.filename, filerequest.key, filerequest.conn);
 			}
 		}, 20);
+		plugin_host.pstcore = pstcore;
 		plugin_host.send_command = function(value, conn) {
 			if (value.startsWith(UPSTREAM_DOMAIN)) {
 				cmd2upstream_list
