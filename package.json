@@ -1,6 +1,6 @@
 {
  "name": "node-pserver",
- "version": "0.1.7",
+ "version": "0.1.8",
  "bin": {
   "pserver": "app.js"
  },
@@ -32,6 +32,6 @@
   "xmlhttprequest": "^1.8.0",
   "rimraf": "*",
   "python-shell": "*",
-  "node-pstcore": "0.1.10"
+  "node-pstcore": "0.1.17"
  }
 }
