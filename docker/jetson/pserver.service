@@ -2,11 +2,8 @@
 Description = pserver daemon
 
 [Service]
-ExecStartPre = -/usr/bin/docker kill pserver
-ExecStartPre = -/usr/bin/docker rm pserver
-ExecStart = /usr/bin/docker run --name pserver --runtime nvidia -p 9001:9001 -v /etc/pserver:/etc/pserver --privileged pserver:0.1.7 -c /root/mono-config.json
+ExecStart = /usr/bin/docker run --rm --name pserver --runtime nvidia -p 9001:9001 -v /etc/pserver:/etc/pserver --privileged pserver:0.1.7 -c /root/mono-config.json
 ExecStop = -/usr/bin/docker kill pserver
-ExecStop = -/usr/bin/docker rm pserver
 Restart = always
 RestartSec = 3
 Type = simple

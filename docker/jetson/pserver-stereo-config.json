@@ -3,22 +3,28 @@
     "wrtc_key" : "unique_key",
     "stream_def" : "default",
     "stream_defs" : {
-        "default" : "v4l2_capture name=capture s=@APP.CAM0@ ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper dup=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265"
+        "default" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper dup=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265"
     },
     "plugin_paths" : [
     ],
     "stream_params" : {
         "default" : {
             "renderer.realtime" : "1",
-            "capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///root/lens_params0.json\" />",
-            "capture.set_sharpness" : "7",
-            "capture.set_backlight_compensation" : "30",
-            "encoder.def" : "gst-launch-1.0 -q fdsrc ! rawvideoparse width=@IWIDTH@ height=@IHEIGHT@ framerate=30/1 format=i420 ! omxh265enc iframeinterval=300 bitrate=4000000 control-rate=2 ! h265parse ! video/x-h265,stream-format=byte-stream,alignment=nal ! fdsink"
+            "mux.vin0" : "v4l2_capture name=capture s=@APP.CAM0@",
+            "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,-90,0\" lens_params=\"file://lens_params0.json\" />",
+            "mux.vin0.capture.set_sharpness" : "7",
+            "mux.vin0.capture.set_backlight_compensation" : "30",
+            "mux.vin1" : "v4l2_capture name=capture s=@APP.CAM1@",
+            "mux.vin1.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"90,270,0\" lens_params=\"file://lens_params1.json\" />",
+            "mux.vin1.capture.set_sharpness" : "7",
+            "mux.vin1.capture.set_backlight_compensation" : "30",
+            "encoder.def" : "gst-launch-1.0 -q fdsrc ! rawvideoparse width=@IWIDTH@ height=@IHEIGHT@ framerate=30/1 format=i420 ! omxh265enc iframeinterval=300 bitrate=2000000 control-rate=2 ! h265parse ! video/x-h265,stream-format=byte-stream,alignment=nal ! fdsink"
         }
     },
     "params" : {
-        "APP.SIZE" : "1024x1024",
-        "APP.CAM0" : "2048x1536@15:/dev/video0"
+        "APP.SIZE" : "1024x512",
+        "APP.CAM0" : "2048x1536@15:/dev/video0",
+        "APP.CAM1" : "2048x1536@15:/dev/video0"
     },
     "pviewer_config_ext" : "",
     "license" : {

@@ -19,12 +19,12 @@ RUN nodebrew install v14.17.1 && \
     nodebrew use v14.17.1
 RUN npm config set unsafe-perm true && \
     npm -g install node-pserver@0.1.9
-RUN /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_calib3d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1
-RUN /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_core.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1
-RUN /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1
-RUN /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_features2d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1
-RUN /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_flann.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1
-RUN /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libtbb.so.2 /usr/lib/aarch64-linux-gnu/libtbb.so.2
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_calib3d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_core.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_features2d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_flann.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libtbb.so.2 /usr/lib/aarch64-linux-gnu/libtbb.so.2
 
 COPY 99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
 COPY pserver-mono-config.json /root/mono-config.json
