@@ -1,6 +1,5 @@
 #docker build -t pserver:0.1.7 -f Dockerfile.jetson .
-#FROM nvcr.io/nvidia/l4t-base:r32.5.0
-FROM nvcr.io/nvidia/cudagl:11.4.2-runtime-ubuntu18.04
+FROM nvcr.io/nvidia/l4t-base:r32.5.0
 
 COPY libopencv_calib3d.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1
 COPY libopencv_core.so.4.1.1 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1
@@ -27,3 +26,10 @@ RUN nodebrew install v14.17.1 && \
     nodebrew use v14.17.1
 RUN npm config set unsafe-perm true && \
     npm -g install node-pserver@0.1.7
+
+COPY pserver-config.json /root/config.json
+COPY lens_params0.json /root/lens_params0.json
+COPY pviewer-config.json /root/.nodebrew/current/lib/node_modules/node-pserver/www/config.json
+
+EXPOSE 9001
+ENTRYPOINT ["pserver"]
