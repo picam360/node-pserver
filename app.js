@@ -97,6 +97,7 @@ var http = null;
 var options = {};
 var m_pvf_filepath = null;
 var m_calibrate = null;
+var m_calibrate_hq = null;
 
 async.waterfall([
 	function(callback) { // argv
@@ -123,6 +124,9 @@ async.waterfall([
 			}
 			if (process.argv[i].startsWith("--calibrate=")) {
 				m_calibrate = process.argv[i].split("=")[1];
+			}
+			if (process.argv[i].startsWith("--calibrate-hq=")) {
+				m_calibrate_hq = process.argv[i].split("=")[1];
 			}
 		}
 		if (!fs.existsSync(conf_filepath)) {
@@ -261,6 +265,15 @@ async.waterfall([
                 var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
                 pstcore.pstcore_set_param(pst, "capture", "meta", meta);
             }
+			pstcore.pstcore_start_pstreamer(pst);
+			//don't call callback(null);
+		}else if(m_calibrate_hq){
+			var def = "nc_capture name=capture debayer=1 expo=20000 gain=1000 binning=0 ! pgl_calibrator w=1024 h=512";
+			var pst = pstcore.pstcore_build_pstreamer(def);
+
+			var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
+			pstcore.pstcore_set_param(pst, "capture", "meta", meta);
+
 			pstcore.pstcore_start_pstreamer(pst);
 			//don't call callback(null);
 		}else{
@@ -467,7 +480,7 @@ async.waterfall([
 						rtp_mod.remove_conn(conn);
 					}
 				});
-
+		
 				//let plugins know pst created
 				for (var i = 0; i < plugins.length; i++) {
 					if (plugins[i].pst_started) {
@@ -1008,7 +1021,6 @@ async.waterfall([
 				filerequest_handler(filerequest.filename, filerequest.key, filerequest.conn);
 			}
 		}, 20);
-		plugin_host.pstcore = pstcore;
 		plugin_host.send_command = function(value, conn) {
 			if (value.startsWith(UPSTREAM_DOMAIN)) {
 				cmd2upstream_list
