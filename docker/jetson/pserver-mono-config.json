@@ -20,7 +20,7 @@
         "APP.SIZE" : "1024x1024",
         "APP.CAM0" : "2048x1536@15:/dev/video0"
     },
-    "pviewer_config_ext" : "www/jetbot-config.json",
+    "pviewer_config_ext" : "",
     "license" : {
         "app_key" : "your_app_key",
         "sku" : "P360SWLIC-STEREO-V1",

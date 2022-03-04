@@ -1,0 +1,27 @@
+{
+    "wrtc_enabled" : false,
+    "wrtc_key" : "unique_key",
+    "stream_def" : "default",
+    "stream_defs" : {
+        "default" : "nc_capture name=capture zerocopy=1 expo=0 gain=100 binning=1 cam_idx=0 ! pcuda_remapper name=remapper dup=1 debayer=I420 rg=1.01 bg=0.99 vg=1.0 sg=1.0 sh=10 ho=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265"
+    },
+    "plugin_paths" : [
+    ],
+    "stream_params" : {
+        "default" : {
+            "renderer.realtime" : "1",
+            "capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///root/lens_params0.json\" />",
+            "encoder.def" : "gst-launch-1.0 -q fdsrc ! rawvideoparse width=@IWIDTH@ height=@IHEIGHT@ framerate=30/1 format=i420 ! omxh265enc iframeinterval=300 bitrate=2000000 control-rate=2 ! h265parse ! video/x-h265,stream-format=byte-stream,alignment=nal ! fdsink"
+        }
+    },
+    "params" : {
+        "APP.SIZE" : "1024x1024"
+    },
+    "pviewer_config_ext" : "",
+    "license" : {
+        "app_key" : "your_app_key",
+        "sku" : "P360SWLIC-STEREO-V1",
+        "iface" : "wlan0"
+    },
+    "debug" : 0
+}

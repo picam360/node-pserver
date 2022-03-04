@@ -27,8 +27,13 @@ RUN nodebrew install v14.17.1 && \
 RUN npm config set unsafe-perm true && \
     npm -g install node-pserver@0.1.7
 
-COPY pserver-config.json /root/config.json
+COPY 99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
+COPY pserver-mono-config.json /root/mono-config.json
+COPY pserver-stereo-config.json /root/stereo-config.json
+COPY pserver-hq-mono-config.json /root/hq-mono-config.json
+COPY pserver-hq-stereo-config.json /root/hq-stereo-config-hq.json
 COPY lens_params0.json /root/lens_params0.json
+COPY lens_params1.json /root/lens_params1.json
 COPY pviewer-config.json /root/.nodebrew/current/lib/node_modules/node-pserver/www/config.json
 
 EXPOSE 9001
