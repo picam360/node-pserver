@@ -1,8 +1,13 @@
+#sudo cp pserver.service /etc/systemd/system/
+#sudo systemctl daemon-reload
+#sudo systemctl start pserver.service
+#sudo systemctl enable pserver.service
+
 [Unit]
 Description = pserver daemon
 
 [Service]
-ExecStart = /usr/bin/docker run --rm --name pserver --runtime nvidia -p 9001:9001 -v /etc/pserver:/etc/pserver --privileged pserver:0.1.7 -c /root/mono-config.json
+ExecStart = /usr/bin/docker run --rm --name pserver --runtime nvidia -p 9001:9001 -v /etc/pserver:/etc/pserver --privileged pserver:0.1.10 -c /root/mono-config.json
 ExecStop = -/usr/bin/docker kill pserver
 Restart = always
 RestartSec = 3
