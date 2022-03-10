@@ -18,7 +18,12 @@
     },
     "params" : {
         "APP.SIZE" : "1024x1024",
-        "APP.CAM0" : "2048x1536@15:/dev/video0"
+#4khdr
+        "APP.CAM0" : "3840x2880@15:/dev/video0"
+#8mp
+#        "APP.CAM0" : "3264x2448@15:/dev/video0"
+#wdr
+#        "APP.CAM0" : "2048x1536@15:/dev/video0"
     },
     "pviewer_config_ext" : "",
     "license" : {
