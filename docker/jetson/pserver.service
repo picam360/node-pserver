@@ -1,4 +1,4 @@
-#sudo docker run --name pserver --runtime nvidia -p 9001:9001 -v /etc/pserver:/etc/pserver --privileged $PSERVER_DOCKER_IMAGE -c /root/mono-config.json
+#sudo docker run -d --name pserver --runtime nvidia -p 9001:9001 -v /etc/pserver:/etc/pserver --net=host -e DISPLAY=:0 --privileged $PSERVER_DOCKER_IMAGE -c /root/mono-config.json
 #sudo cp pserver.service /etc/systemd/system/
 #sudo systemctl daemon-reload
 #sudo systemctl start pserver.service
