@@ -215,6 +215,8 @@ async.waterfall([
 			config_json += "        \"plugins/mjpeg_tegra_decoder_st.so\",\n";
 			config_json += "        \"plugins/mux_st.so\",\n";
 			config_json += "        \"plugins/demux_st.so\",\n";
+			config_json += "        \"plugins/oal_capture_st.so\",\n";
+			config_json += "        \"plugins/opus_encoder_st.so\",\n";
 			config_json += "        \"plugins/icm20948_st.so\",\n";
 		}else if(process.platform === 'win32') {
 			config_json += "        \"plugins/pcuda_remapper_st.so\",\n";
