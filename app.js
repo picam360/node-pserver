@@ -459,22 +459,20 @@ async.waterfall([
 				}
 
 				pstcore.pstcore_set_dequeue_callback(conn.attr.pst, (data)=>{
-					if(data == null){//eob
-						return;
-					}
 					try{
-						conn.attr.transmitbytes += data.length;
-						//console.log("dequeue " + data.length);
-						var MAX_PAYLOAD = conn.getMaxPayload() || 16*1024;//16k is webrtc max
-						var CHUNK_SIZE = MAX_PAYLOAD - rtp_mod.PacketHeaderLength;
-						for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
-							var chunk = data.slice(cur, cur + CHUNK_SIZE);
-							var pack = rtp.build_packet(chunk, PT_ENQUEUE);
-							rtp.sendpacket(pack);
-						}
-						{//end packet
+						if(data == null){//eob
 							var pack = rtp.build_packet(new Buffer("<eob/>", 'ascii'), PT_ENQUEUE);
 							rtp.sendpacket(pack);
+						}else{
+							conn.attr.transmitbytes += data.length;
+							//console.log("dequeue " + data.length);
+							var MAX_PAYLOAD = conn.getMaxPayload() || 16*1024;//16k is webrtc max
+							var CHUNK_SIZE = MAX_PAYLOAD - rtp_mod.PacketHeaderLength;
+							for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
+								var chunk = data.slice(cur, cur + CHUNK_SIZE);
+								var pack = rtp.build_packet(chunk, PT_ENQUEUE);
+								rtp.sendpacket(pack);
+							}
 						}
 					}catch(err){
 						rtp_mod.remove_conn(conn);
