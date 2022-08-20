@@ -18,7 +18,7 @@ RUN sed -i -z "s/} elsif (\$machine =~ m\/aarch64\/) {\n        \$arch = 'armv7l
 RUN nodebrew install v14.17.1 && \
     nodebrew use v14.17.1
 RUN npm config set unsafe-perm true && \
-    npm -g install node-pserver@0.1.10
+    npm -g install node-pserver@0.1.11
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_calib3d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_core.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1
