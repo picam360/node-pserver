@@ -1,4 +1,4 @@
-#sudo docker build -t pserver:0.1.10 -f Dockerfile.jetson .
+#sudo docker build -t pserver:${PSERVER_VERSION} -f Dockerfile.jetson .
 FROM nvcr.io/nvidia/l4t-base:r32.5.0
 
 RUN apt-get update && apt-get install -y \
