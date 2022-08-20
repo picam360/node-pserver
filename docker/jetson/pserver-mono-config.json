@@ -3,7 +3,7 @@
     "wrtc_key" : "unique_key",
     "stream_def" : "default",
     "stream_defs" : {
-        "default" : "v4l2_capture name=capture s=@APP.CAM0@ ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper dup=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265"
+        "default" : "v4l2_capture name=capture s=@APP.CAM0@ ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper ho=1 dup=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265"
     },
     "plugin_paths" : [
     ],

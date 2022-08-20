@@ -3,7 +3,7 @@
     "wrtc_key" : "unique_key",
     "stream_def" : "default",
     "stream_defs" : {
-        "default" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper dup=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265",
+        "default" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper dup=1 ho=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265",
         "calib" : "mux name=mux ! mjpeg_tegra_decoder name=decoder ! pgl_calibrator name=calibrator s=@APP.SIZE@ d=0 ! pipe name=encoder t=H265"
     },
     "plugin_paths" : [
