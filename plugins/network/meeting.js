@@ -1,10 +1,19 @@
 
-function MeetingClient(host) {
+var rtp_mod = require("./rtp.js");
+
+var PT_STATUS = 100;
+var PT_CMD = 101;
+var PT_FILE = 102;
+var PT_ENQUEUE = 110;
+var PT_SET_PARAM = 111;
+var PT_MT_ENQUEUE = 120;
+var PT_MT_SET_PARAM = 121;
+
+function MeetingClient(pstcore, host) {
 	if(!host){
 		return null;
 	}
 	var PacketHeaderLength = 12;
-	var pstcore = app.get_pstcore();
 	var m_host = host;
 	var m_pst_dq;
 	var m_pst_eqs = {};
@@ -19,7 +28,8 @@ function MeetingClient(host) {
 			pstcore.pstcore_set_dequeue_callback(m_pst_dq, (data)=>{
 				try{
 					if(data == null){//eob
-						var pack = m_host.buildpacket(new TextEncoder().encode("<eob/>", 'ascii'), PT_MT_ENQUEUE);
+						//var pack = m_host.build_packet(new TextEncoder().encode("<eob/>", 'ascii'), PT_MT_ENQUEUE); // TODO
+						var pack = m_host.build_packet(Buffer.from("<eob/>", 'ascii'), PT_MT_ENQUEUE);
 						m_host.sendpacket(pack);
 					}else{
 						//console.log("dequeue " + data.length);
@@ -27,7 +37,7 @@ function MeetingClient(host) {
 						var CHUNK_SIZE = MAX_PAYLOAD - PacketHeaderLength;
 						for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
 							var chunk = data.slice(cur, cur + CHUNK_SIZE);
-							var pack = m_host.buildpacket(chunk, PT_MT_ENQUEUE);
+							var pack = m_host.build_packet(chunk, PT_MT_ENQUEUE);
 							m_host.sendpacket(pack);
 						}
 					}
@@ -123,9 +133,8 @@ function MeetingClient(host) {
 	return self;
 }
 
-function MeetingHost(selfclient_enable) {
+function MeetingHost(pstcore, selfclient_enable) {
 	var PacketHeaderLength = 12;
-	var pstcore = app.get_pstcore();
 	var m_clients = [];
 	var m_packet_pendings = {};
 	var m_in_pt_set_param;
@@ -134,54 +143,18 @@ function MeetingHost(selfclient_enable) {
 	var m_selfrtp_c;
 	var m_selfrtp_h;
 
-	var m_pst;
-
-	var def = "ms_capture ! pgl_remapper s=1024x1024 edge_r=0.1 ho=1 deg_offset=-90,0,0 ! wc_encoder br=4000000";
-	pstcore.pstcore_build_pstreamer(def, (pst) => {
-		m_pst = pst;
-		pstcore.pstcore_set_dequeue_callback(pst, (data)=>{
-			try{
-				for(var rtp of m_clients){
-					if(data == null){//eob
-						var pack = rtp.buildpacket(new TextEncoder().encode("<eob/>", 'ascii'), PT_ENQUEUE);
-						rtp.sendpacket(pack);
-					}else{
-						//console.log("dequeue " + data.length);
-						var MAX_PAYLOAD = 16*1024;//16k is webrtc max
-						var CHUNK_SIZE = MAX_PAYLOAD - PacketHeaderLength;
-						for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
-							var chunk = data.slice(cur, cur + CHUNK_SIZE);
-							var pack = rtp.buildpacket(chunk, PT_ENQUEUE);
-							rtp.sendpacket(pack);
-						}
-					}
-				}
-			}catch(err){
-				console.log(err);
-			}
-		});
-		// pstcore.pstcore_add_set_param_done_callback(pst, (msg)=>{
-		// 	//console.log("set_param " + msg);
-		// 	if(m_in_pt_set_param){//prevent loop back
-		// 		return;
-		// 	}
-		// 	m_param_pendings.push(msg);
-		// });
-		pstcore.pstcore_start_pstreamer(pst);
-	});
-
 	var self = {
 		add_client : (rtp) => {
 			if(m_clients.length == 0 && selfclient_enable){
-				m_selfrtp_c = Rtp();
+				m_selfrtp_c = rtp_mod.Rtp();
 				m_selfrtp_c.sendpacket = (data) => {
-					m_selfclient.handle_packet(PacketHeader(data));
+					m_selfclient.handle_packet(rtp_mod.PacketHeader(data));
 				};
-				m_selfrtp_h = Rtp();
+				m_selfrtp_h = rtp_mod.Rtp();
 				m_selfrtp_h.sendpacket = (data) => {
-					self.handle_packet(PacketHeader(data), m_selfrtp_c);
+					self.handle_packet(rtp_mod.PacketHeader(data), m_selfrtp_c);
 				};
-				m_selfclient = MeetingClient(m_selfrtp_h);
+				m_selfclient = MeetingClient(pstcore, m_selfrtp_h);
 				m_clients.push(m_selfrtp_c);
 			}
 			m_clients.push(rtp);
@@ -242,15 +215,6 @@ function MeetingHost(selfclient_enable) {
 				}
 				
 			} else if (packet.GetPayloadType() == PT_MT_SET_PARAM) { // set_param
-			} else if (packet.GetPayloadType() == PT_SET_PARAM) { // set_param
-				var str = (new TextDecoder)
-					.decode(packet.GetPayload());
-				var list = JSON.parse(str);
-				for(var ary of list){
-					m_in_pt_set_param = true;
-					pstcore.pstcore_set_param(m_pst, ary[0], ary[1], ary[2]);
-					m_in_pt_set_param = false;
-				}
 			}
 		},
 	};

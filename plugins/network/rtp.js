@@ -40,22 +40,20 @@ function PacketHeader(pack) {
 
 
 function Rtp(conn) {
-	if(!conn){
-		return null;
-	}
-	
 	var m_conn = conn;
 	var m_callback = null;
 	var m_sequencenumber = 0;
 	
-	m_conn.on("data", function(buff) {
-		if (m_callback) {
-			if (buff.constructor.name != "Buffer") {
-				buff = new Buffer(buff);
+	if(m_conn){
+		m_conn.on("data", function(buff) {
+			if (m_callback) {
+				if (buff.constructor.name != "Buffer") {
+					buff = Buffer.from(buff);
+				}
+				m_callback(PacketHeader(buff));
 			}
-			m_callback(PacketHeader(buff));
-		}
-	});
+		});
+	}
 	
 	var self = {
 		build_packet: function(data, pt, timestamp_ms) {
@@ -63,7 +61,7 @@ function Rtp(conn) {
 			timestamp_s = Math.floor((timestamp_ms || now) / 1000);
 			timestamp_ss = (timestamp_ms || now) / 1000 - timestamp_s;
 			var header_len = 12;
-			var pack = new Buffer(header_len + data.length);
+			var pack = Buffer.alloc(header_len + data.length);
 			pack.writeUInt8(0, 0);
 			pack.writeUInt8(pt & 0x7F, 1);
 			pack.writeUInt16BE(m_sequencenumber, 2);
@@ -83,6 +81,9 @@ function Rtp(conn) {
 		},
 		// @_packet : Buffer
 		sendpacket: function(packets) {
+			if (!m_conn) {
+				return;
+			}
 			if (!Array.isArray(packets)) {
 				m_conn.send(packets);
 				return;

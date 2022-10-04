@@ -146,7 +146,9 @@ async.waterfall([
 			config_json += "        \"plugins/mux_st.so\",\n";
 			config_json += "        \"plugins/demux_st.so\",\n";
 			config_json += "        \"plugins/oal_capture_st.so\",\n";
+			config_json += "        \"plugins/oal_player_st.so\",\n";
 			config_json += "        \"plugins/opus_encoder_st.so\",\n";
+			config_json += "        \"plugins/opus_decoder_st.so\",\n";
 			config_json += "        \"plugins/icm20948_st.so\",\n";
 		}else if(process.platform === 'win32') {
 			config_json += "        \"plugins/pcuda_remapper_st.so\",\n";
@@ -172,42 +174,43 @@ async.waterfall([
 			var framerate_str = framerate ? " -r " + framerate : "";
 			var def = "pipe name=capture t=I420 s=" + size + " ! pgl_calibrator w=1024 h=512";
 			//var def = "tc_capture name=capture debayer=1 expo=20000 gain=1000 binning=2 ! pgl_calibrator w=1024 h=512";
-			var pst = pstcore.pstcore_build_pstreamer(def);
-            if(process.platform==='darwin'){
-                var pipe_def = "/usr/local/bin/ffmpeg -f avfoundation -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i \""
-								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
-                pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
-
-                var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
-                pstcore.pstcore_set_param(pst, "capture", "meta", meta);
-            }
-            else if(process.platform==='linux'){
-                var pipe_def = "ffmpeg -f video4linux2 -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i \""
-								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
-                pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
-
-                var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
-                pstcore.pstcore_set_param(pst, "capture", "meta", meta);
-            }
-            else if(process.platform==='win32'){
-                var pipe_def = "ffmpeg -f dshow -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i video=\""
-								 + device + "\" -f rawvideo -pix_fmt yuv420p -";
-                pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
-
-                var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
-                pstcore.pstcore_set_param(pst, "capture", "meta", meta);
-            }
-			pstcore.pstcore_start_pstreamer(pst);
-			//don't call callback(null);
+			pstcore.pstcore_build_pstreamer(def, (pst) => {
+				if(process.platform==='darwin'){
+					var pipe_def = "/usr/local/bin/ffmpeg -f avfoundation -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i \""
+									 + device + "\" -f rawvideo -pix_fmt yuv420p -";
+					pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
+	
+					var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
+					pstcore.pstcore_set_param(pst, "capture", "meta", meta);
+				}
+				else if(process.platform==='linux'){
+					var pipe_def = "ffmpeg -f video4linux2 -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i \""
+									 + device + "\" -f rawvideo -pix_fmt yuv420p -";
+					pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
+	
+					var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
+					pstcore.pstcore_set_param(pst, "capture", "meta", meta);
+				}
+				else if(process.platform==='win32'){
+					var pipe_def = "ffmpeg -f dshow -s @OWIDTH@x@OHEIGHT@" + framerate_str + " -i video=\""
+									 + device + "\" -f rawvideo -pix_fmt yuv420p -";
+					pstcore.pstcore_set_param(pst, "capture", "def", pipe_def);
+	
+					var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
+					pstcore.pstcore_set_param(pst, "capture", "meta", meta);
+				}
+				pstcore.pstcore_start_pstreamer(pst);
+				//don't call callback(null);
+			});
 		}else if(m_calibrate_hq){
 			var def = "nc_capture name=capture debayer=1 expo=20000 gain=1000 binning=0 ! pgl_calibrator w=1024 h=512";
-			var pst = pstcore.pstcore_build_pstreamer(def);
-
-			var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
-			pstcore.pstcore_set_param(pst, "capture", "meta", meta);
-
-			pstcore.pstcore_start_pstreamer(pst);
-			//don't call callback(null);
+			pstcore.pstcore_build_pstreamer(def, (pst) => {
+				var meta = "<meta maptype=\"FISH\" lens_params=\"file://lens_params.json\" />";
+				pstcore.pstcore_set_param(pst, "capture", "meta", meta);
+	
+				pstcore.pstcore_start_pstreamer(pst);
+				//don't call callback(null);
+			});
 		}else{
 			callback(null);
 		}
@@ -333,9 +336,9 @@ async.waterfall([
 				}
 				var header_str = sprintf("<picam360:file name=\"%s\" key=\"%s\" status=\"200\" seq=\"%d\" eof=\"%s\" />", filename, key, seq, eof
 					.toString());
-				var header = new Buffer(header_str, 'ascii');
+				var header = Buffer.from(header_str, 'ascii');
 				var len = 2 + header.length + length;
-				var buffer = new Buffer(len);
+				var buffer = Buffer.alloc(len);
 				buffer.writeUInt16BE(header.length, 0);
 				header.copy(buffer, 2);
 				data.copy(buffer, 2 + header.length, i, i + length);
@@ -349,11 +352,11 @@ async.waterfall([
 				if (err) {
 					var header_str = "<picam360:file name=\"" + filename +
 						"\" key=\"" + key + "\" status=\"404\" />";
-					data = new Buffer(0);
+					data = Buffer.alloc(0);
 					console.log("unknown :" + filename + ":" + key);
-					var header = new Buffer(header_str, 'ascii');
+					var header = Buffer.from(header_str, 'ascii');
 					var len = 2 + header.length;
-					var buffer = new Buffer(len);
+					var buffer = Buffer.alloc(len);
 					buffer.writeUInt16BE(header.length, 0);
 					header.copy(buffer, 2);
 //					var pack = rtp.build_packet(buffer, PT_FILE);
@@ -451,9 +454,13 @@ async.waterfall([
 			for (var k in options["plugin_paths"]) {
 				var plugin_path = options["plugin_paths"][k];
 				console.log("loading... " + plugin_path);
-				var plugin = require("./" + plugin_path)
-					.create_plugin(plugin_host);
-				plugins.push(plugin);
+				var plugin_factory = require("./" + plugin_path);
+				if(plugin_factory && plugin_factory.create_plugin){
+					var plugin = plugin_factory.create_plugin(plugin_host);
+					plugins.push(plugin);
+				}else{
+					console.log("fail... " + plugin_path);
+				}
 			}
 			for (var i = 0; i < plugins.length; i++) {
 				if (plugins[i].init_options) {

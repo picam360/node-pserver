@@ -2,8 +2,6 @@
 var async = require('async');
 var fs = require("fs");
 var sprintf = require('sprintf-js').sprintf;
-
-var rtp_mod = require("./rtp.js");
 var uuidgen = require('uuid/v4');
 var EventEmitter = require('eventemitter3');
 var express = require('express');
@@ -11,6 +9,9 @@ var xmlhttprequest = require('xmlhttprequest');
 global.XMLHttpRequest = xmlhttprequest.XMLHttpRequest;
 
 var pstcore = require('node-pstcore');
+
+var rtp_mod = require("./rtp.js");
+var mt_mod = require("./meeting.js");
 
 var UPSTREAM_DOMAIN = "upstream.";
 var SERVER_DOMAIN = "";
@@ -21,6 +22,8 @@ var PT_CMD = 101;
 var PT_FILE = 102;
 var PT_ENQUEUE = 110;
 var PT_SET_PARAM = 111;
+var PT_MT_ENQUEUE = 120;
+var PT_MT_SET_PARAM = 121;
 
 
 var SIGNALING_HOST = "peer.picam360.com";
@@ -42,6 +45,7 @@ var http = null;
 var options = {};
 var PLUGIN_NAME = "host";
 var m_pvf_filepath;
+var m_mt_host;
 
 function init_data_stream(callback) {
     console.log("init data stream");
@@ -58,7 +62,7 @@ function init_data_stream(callback) {
             var status = "<picam360:status name=\"" + name +
                 "\" value=\"" + value + "\" />";
 //				var pack = rtp
-//					.build_packet(new Buffer(status, 'ascii'), PT_STATUS);
+//					.build_packet(Buffer.from(status, 'ascii'), PT_STATUS);
 //				rtp.sendpacket(pack);
         }, 1000);
     }
@@ -169,7 +173,7 @@ function init_data_stream(callback) {
                             new Date().getTime() +
                             "\" />";
                         var pack = rtp
-                            .build_packet(new Buffer(status, 'ascii'), PT_STATUS);
+                            .build_packet(Buffer.from(status, 'ascii'), PT_STATUS);
                         rtp.sendpacket(pack);
                         return;
                     } else if (value[0] == "set_timediff_ms") {
@@ -178,144 +182,159 @@ function init_data_stream(callback) {
                 }
             });
         }).then(() => {
+            if(!m_mt_host){
+                m_mt_host = mt_mod.MeetingHost(pstcore, options.meeting_enabled);
+            }
+            m_mt_host.add_client(rtp);
+
+            var def;
+            var need_to_set_stream_params = false;
             if(m_pvf_filepath){
                 var def = "pvf_loader url=\"file:/" + m_pvf_filepath + "\"";
-                conn.attr.pst = pstcore.pstcore_build_pstreamer(def);
             }else{
                 if (!options['stream_defs'] || !options['stream_defs'][conn.frame_info.stream_def]) {
                     console.log("no stream definition : " + conn.frame_info.stream_def);
                     return;
                 }
-                var def = options['stream_defs'][conn.frame_info.stream_def];
+                def = options['stream_defs'][conn.frame_info.stream_def];
                 for(var key in options['params']) {
                     def = def.replace(new RegExp("@" + key + "@", "g"), options['params'][key]);
                 }
-                conn.attr.pst = pstcore.pstcore_build_pstreamer(def);
-                if(options['stream_params'] && options['stream_params'][conn.frame_info.stream_def]) {
-                    for(var key in options['stream_params'][conn.frame_info.stream_def]) {
-                        var dotpos = key.lastIndexOf(".");
-                        var name = key.substr(0, dotpos);
-                        var param = key.substr(dotpos + 1);
-                        var value = options['stream_params'][conn.frame_info.stream_def][key];
-                        for(var key in options['params']) {
-                            value = value.replace(new RegExp("@" + key + "@", "g"), options['params'][key]);
-                        }
-                        if(!name || !param || !value){
-                            continue;
-                        }
-                        pstcore.pstcore_set_param(conn.attr.pst, name, param, value);
-
-                        var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", name, param, value.replace(/"/g, '\\"'));
-                        conn.attr.param_pendings.push(msg);
-                    }
-                }
-                if(options['pviewer_config_ext']) {
-                    fs.readFile(options['pviewer_config_ext'], 'utf8', function(err, data_str) {
-                        if (err) {
-                            console.log("err :" + err);
-                        } else {
-                            var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", 
-                                "network", "pviewer_config_ext", data_str.replace(/\n/g, '\\n').replace(/"/g, '\\"'));
+                need_to_set_stream_params = true;
+            }
+            pstcore.pstcore_build_pstreamer(def, pst => {
+                conn.attr.pst = pst;
+                if(need_to_set_stream_params){
+                    if(options['stream_params'] && options['stream_params'][conn.frame_info.stream_def]) {
+                        for(var key in options['stream_params'][conn.frame_info.stream_def]) {
+                            var dotpos = key.lastIndexOf(".");
+                            var name = key.substr(0, dotpos);
+                            var param = key.substr(dotpos + 1);
+                            var value = options['stream_params'][conn.frame_info.stream_def][key];
+                            for(var key in options['params']) {
+                                value = value.replace(new RegExp("@" + key + "@", "g"), options['params'][key]);
+                            }
+                            if(!name || !param || !value){
+                                continue;
+                            }
+                            pstcore.pstcore_set_param(conn.attr.pst, name, param, value);
+    
+                            var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", name, param, value.replace(/"/g, '\\"'));
                             conn.attr.param_pendings.push(msg);
                         }
-                    });
-                }
-            }
-
-            pstcore.pstcore_set_dequeue_callback(conn.attr.pst, (data)=>{
-                try{
-                    if(data == null){//eob
-                        var pack = rtp.build_packet(new Buffer("<eob/>", 'ascii'), PT_ENQUEUE);
-                        rtp.sendpacket(pack);
-                    }else{
-                        conn.attr.transmitbytes += data.length;
-                        //console.log("dequeue " + data.length);
-                        var MAX_PAYLOAD = conn.getMaxPayload() || 16*1024;//16k is webrtc max
-                        var CHUNK_SIZE = MAX_PAYLOAD - rtp_mod.PacketHeaderLength;
-                        for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
-                            var chunk = data.slice(cur, cur + CHUNK_SIZE);
-                            var pack = rtp.build_packet(chunk, PT_ENQUEUE);
-                            rtp.sendpacket(pack);
-                        }
                     }
-                }catch(err){
-                    rtp_mod.remove_conn(conn);
+                    if(options['pviewer_config_ext']) {
+                        fs.readFile(options['pviewer_config_ext'], 'utf8', function(err, data_str) {
+                            if (err) {
+                                console.log("err :" + err);
+                            } else {
+                                var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", 
+                                    "network", "pviewer_config_ext", data_str.replace(/\n/g, '\\n').replace(/"/g, '\\"'));
+                                conn.attr.param_pendings.push(msg);
+                            }
+                        });
+                    }
                 }
-            });
     
-            //TODO
-            // //let plugins know pst created
-            // for (var i = 0; i < plugins.length; i++) {
-            //     if (plugins[i].pst_started) {
-            //         plugins[i].pst_started(pstcore, conn.attr.pst);
-            //         break;
-            //     }
-            // }
-    
-            pstcore.pstcore_add_set_param_done_callback(conn.attr.pst, (msg)=>{
-                //console.log("set_param " + msg);
-                if(conn.attr.in_pt_set_param){//prevent loop back
-                    return;
-                }
-                conn.attr.param_pendings.push(msg);
-            });
-            pstcore.pstcore_start_pstreamer(conn.attr.pst);
-
-            rtp_rx_conns.push(conn);
-
-            conn.attr.timer = setInterval(function() {
-                try{
-                    var now = new Date().getTime();
-                    if (now - conn.attr.timeout > 60000) {
-                        console.log("timeout");
-                        throw "TIMEOUT";
-                    }
-                    if(conn.attr.param_pendings.length > 0) {
-                        var msg = "[" + conn.attr.param_pendings.join(',') + "]";
-                        var pack = rtp.build_packet(new Buffer(msg, 'ascii'), PT_SET_PARAM);
-                        rtp.sendpacket(pack);
-                        conn.attr.param_pendings = [];
-                    }
-                }catch(err){
-                    rtp_mod.remove_conn(conn);
-                }
-            }, 33);
-            
-            conn.attr.transmitbytes = 0;
-            conn.attr.timer2 = setInterval(()=>{
-                if(conn.attr.transmitbytes == 0){
-                    return;
-                }
-                console.log(8*conn.attr.transmitbytes/1000);
-                conn.attr.transmitbytes=0;
-            },1000);
-            
-            rtp.set_callback(function(packet) {
-                conn.attr.timeout = new Date().getTime();
-                if (packet.GetPayloadType() == PT_SET_PARAM) { // set_param
-                    var str = (new TextDecoder)
-                        .decode(packet.GetPayload());
+                pstcore.pstcore_set_dequeue_callback(conn.attr.pst, (data)=>{
                     try{
-                        var list = JSON.parse(str);
-                        for(var ary of list){
-                            conn.attr.in_pt_set_param = true;
-                            pstcore.pstcore_set_param(conn.attr.pst, ary[0], ary[1], ary[2]);
-                            conn.attr.in_pt_set_param = false;
+                        if(data == null){//eob
+                            var pack = rtp.build_packet(Buffer.from("<eob/>", 'ascii'), PT_ENQUEUE);
+                            rtp.sendpacket(pack);
+                        }else{
+                            conn.attr.transmitbytes += data.length;
+                            //console.log("dequeue " + data.length);
+                            var MAX_PAYLOAD = conn.getMaxPayload() || 16*1024;//16k is webrtc max
+                            var CHUNK_SIZE = MAX_PAYLOAD - rtp_mod.PacketHeaderLength;
+                            for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
+                                var chunk = data.slice(cur, cur + CHUNK_SIZE);
+                                var pack = rtp.build_packet(chunk, PT_ENQUEUE);
+                                rtp.sendpacket(pack);
+                            }
                         }
-                    }catch{
-                        console.log("fail parse json", str);
+                    }catch(err){
+                        rtp_mod.remove_conn(conn);
                     }
-                }else if (packet.GetPayloadType() == PT_CMD) {
-                    var cmd = packet.GetPacketData().toString('ascii', packet
-                        .GetHeaderLength());
-                    var split = cmd.split('\"');
-                    var id = split[1];
-                    var value = split[3];
-                    plugin_host.send_command(value, conn);
-                    if (options.debug >= 5) {
-                        console.log("cmd got :" + cmd);
+                });
+        
+                //TODO
+                // //let plugins know pst created
+                // for (var i = 0; i < plugins.length; i++) {
+                //     if (plugins[i].pst_started) {
+                //         plugins[i].pst_started(pstcore, conn.attr.pst);
+                //         break;
+                //     }
+                // }
+        
+                pstcore.pstcore_add_set_param_done_callback(conn.attr.pst, (msg)=>{
+                    //console.log("set_param " + msg);
+                    if(conn.attr.in_pt_set_param){//prevent loop back
+                        return;
                     }
-                }
+                    conn.attr.param_pendings.push(msg);
+                });
+                pstcore.pstcore_start_pstreamer(conn.attr.pst);
+    
+                rtp_rx_conns.push(conn);
+    
+                conn.attr.timer = setInterval(function() {
+                    try{
+                        var now = new Date().getTime();
+                        if (now - conn.attr.timeout > 60000) {
+                            console.log("timeout");
+                            throw "TIMEOUT";
+                        }
+                        if(conn.attr.param_pendings.length > 0) {
+                            var msg = "[" + conn.attr.param_pendings.join(',') + "]";
+                            var pack = rtp.build_packet(Buffer.from(msg, 'ascii'), PT_SET_PARAM);
+                            rtp.sendpacket(pack);
+                            conn.attr.param_pendings = [];
+                        }
+                    }catch(err){
+                        rtp_mod.remove_conn(conn);
+                    }
+                }, 33);
+                
+                conn.attr.transmitbytes = 0;
+                conn.attr.timer2 = setInterval(()=>{
+                    if(conn.attr.transmitbytes == 0){
+                        return;
+                    }
+                    console.log(8*conn.attr.transmitbytes/1000);
+                    conn.attr.transmitbytes=0;
+                },1000);
+                
+                rtp.set_callback(function(packet) {
+                    conn.attr.timeout = new Date().getTime();
+                    if (packet.GetPayloadType() == PT_ENQUEUE) {
+                        console.log("PT_ENQUEUE from client");
+                    }else if (packet.GetPayloadType() == PT_SET_PARAM) { // set_param
+                        var str = (new TextDecoder)
+                            .decode(packet.GetPayload());
+                        try{
+                            var list = JSON.parse(str);
+                            for(var ary of list){
+                                conn.attr.in_pt_set_param = true;
+                                pstcore.pstcore_set_param(conn.attr.pst, ary[0], ary[1], ary[2]);
+                                conn.attr.in_pt_set_param = false;
+                            }
+                        }catch{
+                            console.log("fail parse json", str);
+                        }
+                    }else if (packet.GetPayloadType() == PT_CMD) {
+                        var cmd = packet.GetPacketData().toString('ascii', packet
+                            .GetHeaderLength());
+                        var split = cmd.split('\"');
+                        var id = split[1];
+                        var value = split[3];
+                        plugin_host.send_command(value, conn);
+                        if (options.debug >= 5) {
+                            console.log("cmd got :" + cmd);
+                        }
+                    }else{
+                        m_mt_host.handle_packet(packet, rtp);
+                    }
+                });
             });
         });
     }
@@ -646,5 +665,4 @@ var self = {
         return plugin;
     }
 };
-debugger;
 module.exports = self;
