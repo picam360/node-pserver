@@ -183,7 +183,7 @@ function init_data_stream(callback) {
             });
         }).then(() => {
             if(!m_mt_host){
-                m_mt_host = mt_mod.MeetingHost(pstcore, options.meeting_enabled);
+                m_mt_host = mt_mod.MeetingHost(pstcore, options.meeting_enabled, options);
             }
             m_mt_host.add_client(rtp);
 

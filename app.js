@@ -139,6 +139,10 @@ async.waterfall([
 		config_json += "        \"plugins/dealer_st.so\",\n";
 		if(process.platform === 'darwin') {
 			config_json += "		\"plugins/vt_decoder_st.so\",\n";
+			config_json += "        \"plugins/oal_capture_st.so\",\n";
+			config_json += "        \"plugins/oal_player_st.so\",\n";
+			config_json += "        \"plugins/opus_encoder_st.so\",\n";
+			config_json += "        \"plugins/opus_decoder_st.so\",\n";
 		}else if(process.platform === 'linux') {
 			config_json += "        \"plugins/pcuda_remapper_st.so\",\n";
 			config_json += "        \"plugins/v4l2_capture_st.so\",\n";

@@ -9,7 +9,7 @@ var PT_SET_PARAM = 111;
 var PT_MT_ENQUEUE = 120;
 var PT_MT_SET_PARAM = 121;
 
-function MeetingClient(pstcore, host) {
+function MeetingClient(pstcore, host, _options) {
 	if(!host){
 		return null;
 	}
@@ -20,6 +20,8 @@ function MeetingClient(pstcore, host) {
 	var m_pst_eq_building_src = -1;
 	var m_enqueue_pendings = [];
 	var m_in_pt_set_param;
+
+	var options = _options || {};
 
 	{//output stream
 		var def = "oal_capture name=capture ! opus_encoder";
@@ -45,6 +47,9 @@ function MeetingClient(pstcore, host) {
 					console.log(err);
 				}
 			});
+			if(options.audio_input_devicename){
+				pstcore.pstcore_set_param(m_pst_dq, "capture", "devicename", options.audio_input_devicename);
+			}
 			pstcore.pstcore_start_pstreamer(m_pst_dq);
 		});
 	}
@@ -56,12 +61,17 @@ function MeetingClient(pstcore, host) {
 				var chunk = packet.GetPayload();
 				var eob = "<eob/>";
 
+				//console.log("enqueue:", src, chunk.length);
+
 				if(!m_pst_eqs[src]){ //input stream
 					if(m_pst_eq_building_src < 0){
 						m_pst_eq_building_src = src;
-						var def = "opus_decoder ! oal_player realtime=1 buffer=0.5";
+						var def = "opus_decoder ! oal_player name=player realtime=1 buffer=0.5";
 						pstcore.pstcore_build_pstreamer(def, (pst) => {
 							m_pst_eqs[m_pst_eq_building_src] = pst;
+							if(options.audio_output_devicename){
+								pstcore.pstcore_set_param(m_pst_dq, "player", "devicename", options.audio_output_devicename);
+							}
 							pstcore.pstcore_start_pstreamer(m_pst_eqs[m_pst_eq_building_src]);
 							m_pst_eq_building_src = -1;
 						});
@@ -133,7 +143,9 @@ function MeetingClient(pstcore, host) {
 	return self;
 }
 
-function MeetingHost(pstcore, selfclient_enable) {
+function MeetingHost(pstcore, selfclient_enable, _options) {
+	var options = _options || {};
+
 	var PacketHeaderLength = 12;
 	var m_clients = [];
 	var m_packet_pendings = {};
@@ -142,6 +154,8 @@ function MeetingHost(pstcore, selfclient_enable) {
 	var m_selfclient;
 	var m_selfrtp_c;
 	var m_selfrtp_h;
+
+	var options = _options || {};
 
 	var self = {
 		add_client : (rtp) => {
@@ -154,7 +168,7 @@ function MeetingHost(pstcore, selfclient_enable) {
 				m_selfrtp_h.sendpacket = (data) => {
 					self.handle_packet(rtp_mod.PacketHeader(data), m_selfrtp_c);
 				};
-				m_selfclient = MeetingClient(pstcore, m_selfrtp_h);
+				m_selfclient = MeetingClient(pstcore, m_selfrtp_h, options);
 				m_clients.push(m_selfrtp_c);
 			}
 			m_clients.push(rtp);
