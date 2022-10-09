@@ -70,6 +70,7 @@ function MeetingClient(pstcore, host, _options) {
 						pstcore.pstcore_build_pstreamer(def, (pst) => {
 							m_pst_eqs[m_pst_eq_building_src] = pst;
 							if(options.audio_output_devicename){
+								console.log("player.devicename", options.audio_output_devicename);
 								pstcore.pstcore_set_param(m_pst_dq, "player", "devicename", options.audio_output_devicename);
 							}
 							pstcore.pstcore_start_pstreamer(m_pst_eqs[m_pst_eq_building_src]);
@@ -186,6 +187,7 @@ function MeetingHost(pstcore, selfclient_enable, _options) {
 		handle_packet : (packet, rtp) => {
 			if (packet.GetPayloadType() == PT_MT_ENQUEUE) { // enqueue
 				var chunk = packet.GetPayload();
+				var src = packet.GetSsrc();
 				var eob = "<eob/>";
 
 				for(var src=0;src<m_clients.length;src++){
@@ -212,7 +214,7 @@ function MeetingHost(pstcore, selfclient_enable, _options) {
 							if(_rtp == rtp){
 								continue;
 							}
-							for (var _packet of m_packet_pendings[rtp]) {
+							for (var _packet of m_packet_pendings[src]) {
 								_rtp.sendpacket(_packet.GetPacketData());
 							}
 							_rtp.sendpacket(packet.GetPacketData());//eob
@@ -220,12 +222,12 @@ function MeetingHost(pstcore, selfclient_enable, _options) {
 							self.remove_client(_rtp);
 						}
 					}
-					m_packet_pendings[rtp] = [];
+					m_packet_pendings[src] = [];
 				}else{
-					if(!m_packet_pendings[rtp]){
-						m_packet_pendings[rtp] = [];
+					if(!m_packet_pendings[src]){
+						m_packet_pendings[src] = [];
 					}
-					m_packet_pendings[rtp].push(packet);
+					m_packet_pendings[src].push(packet);
 				}
 				
 			} else if (packet.GetPayloadType() == PT_MT_SET_PARAM) { // set_param
