@@ -32,7 +32,7 @@ function MeetingClient(pstcore, host, _options) {
 					if(data == null){//eob
 						//var pack = m_host.build_packet(new TextEncoder().encode("<eob/>", 'ascii'), PT_MT_ENQUEUE); // TODO
 						var pack = m_host.build_packet(Buffer.from("<eob/>", 'ascii'), PT_MT_ENQUEUE);
-						m_host.sendpacket(pack);
+						m_host.send_packet(pack);
 					}else{
 						//console.log("dequeue " + data.length);
 						var MAX_PAYLOAD = 16*1024;//16k is webrtc max
@@ -40,7 +40,7 @@ function MeetingClient(pstcore, host, _options) {
 						for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
 							var chunk = data.slice(cur, cur + CHUNK_SIZE);
 							var pack = m_host.build_packet(chunk, PT_MT_ENQUEUE);
-							m_host.sendpacket(pack);
+							m_host.send_packet(pack);
 						}
 					}
 				}catch(err){
@@ -162,11 +162,11 @@ function MeetingHost(pstcore, selfclient_enable, _options) {
 		add_client : (rtp) => {
 			if(m_clients.length == 0 && selfclient_enable){
 				m_selfrtp_c = rtp_mod.Rtp();
-				m_selfrtp_c.sendpacket = (data) => {
+				m_selfrtp_c.send_packet = (data) => {
 					m_selfclient.handle_packet(rtp_mod.PacketHeader(data));
 				};
 				m_selfrtp_h = rtp_mod.Rtp();
-				m_selfrtp_h.sendpacket = (data) => {
+				m_selfrtp_h.send_packet = (data) => {
 					self.handle_packet(rtp_mod.PacketHeader(data), m_selfrtp_c);
 				};
 				m_selfclient = MeetingClient(pstcore, m_selfrtp_h, options);
@@ -215,9 +215,9 @@ function MeetingHost(pstcore, selfclient_enable, _options) {
 								continue;
 							}
 							for (var _packet of m_packet_pendings[src]) {
-								_rtp.sendpacket(_packet.GetPacketData());
+								_rtp.send_packet(_packet.GetPacketData());
 							}
-							_rtp.sendpacket(packet.GetPacketData());//eob
+							_rtp.send_packet(packet.GetPacketData());//eob
 						}catch(err){
 							self.remove_client(_rtp);
 						}

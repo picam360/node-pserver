@@ -347,7 +347,7 @@ async.waterfall([
 				header.copy(buffer, 2);
 				data.copy(buffer, 2 + header.length, i, i + length);
 				var pack = conn.rtp.build_packet(buffer, PT_FILE);
-				conn.rtp.sendpacket(pack);
+				conn.rtp.send_packet(pack);
 			}
 		}
 
@@ -364,7 +364,7 @@ async.waterfall([
 					buffer.writeUInt16BE(header.length, 0);
 					header.copy(buffer, 2);
 //					var pack = rtp.build_packet(buffer, PT_FILE);
-//					rtp.sendpacket(pack);
+//					rtp.send_packet(pack);
 				} else {
 					send_file(filename, key, conn, data);
 				}

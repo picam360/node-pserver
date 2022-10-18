@@ -63,7 +63,7 @@ function init_data_stream(callback) {
                 "\" value=\"" + value + "\" />";
 //				var pack = rtp
 //					.build_packet(Buffer.from(status, 'ascii'), PT_STATUS);
-//				rtp.sendpacket(pack);
+//				rtp.send_packet(pack);
         }, 1000);
     }
 
@@ -174,7 +174,7 @@ function init_data_stream(callback) {
                             "\" />";
                         var pack = rtp
                             .build_packet(Buffer.from(status, 'ascii'), PT_STATUS);
-                        rtp.sendpacket(pack);
+                        rtp.send_packet(pack);
                         return;
                     } else if (value[0] == "set_timediff_ms") {
                         resolve();
@@ -240,7 +240,7 @@ function init_data_stream(callback) {
                     try{
                         if(data == null){//eob
                             var pack = rtp.build_packet(Buffer.from("<eob/>", 'ascii'), PT_ENQUEUE);
-                            rtp.sendpacket(pack);
+                            rtp.send_packet(pack);
                         }else{
                             conn.attr.transmitbytes += data.length;
                             //console.log("dequeue " + data.length);
@@ -249,7 +249,7 @@ function init_data_stream(callback) {
                             for(var cur=0;cur<data.length;cur+=CHUNK_SIZE){
                                 var chunk = data.slice(cur, cur + CHUNK_SIZE);
                                 var pack = rtp.build_packet(chunk, PT_ENQUEUE);
-                                rtp.sendpacket(pack);
+                                rtp.send_packet(pack);
                             }
                         }
                     }catch(err){
@@ -287,7 +287,7 @@ function init_data_stream(callback) {
                         if(conn.attr.param_pendings.length > 0) {
                             var msg = "[" + conn.attr.param_pendings.join(',') + "]";
                             var pack = rtp.build_packet(Buffer.from(msg, 'ascii'), PT_SET_PARAM);
-                            rtp.sendpacket(pack);
+                            rtp.send_packet(pack);
                             conn.attr.param_pendings = [];
                         }
                     }catch(err){

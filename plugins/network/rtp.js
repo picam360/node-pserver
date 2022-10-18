@@ -80,7 +80,7 @@ function Rtp(conn) {
 			m_callback = callback;
 		},
 		// @_packet : Buffer
-		sendpacket: function(packets) {
+		send_packet: function(packets) {
 			if (!m_conn) {
 				return;
 			}
