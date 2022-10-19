@@ -22,6 +22,7 @@ try{
 try{
 	fs.copyFileSync("www/plugins/network/signaling.js", "plugins/network/signaling.js");
 	fs.copyFileSync("www/plugins/network/meeting.js", "plugins/network/meeting.js");
+	fs.copyFileSync("www/plugins/network/rtp.js", "plugins/network/rtp.js");
 }catch(err){
 	console.log("copy files:" + err);
 }

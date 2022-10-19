@@ -10,8 +10,24 @@ global.XMLHttpRequest = xmlhttprequest.XMLHttpRequest;
 
 var pstcore = require('node-pstcore');
 
-var rtp_mod = require("./rtp.js");
 var mt_mod = require("./meeting.js");
+
+var is_nodejs = (typeof process !== 'undefined' && process.versions && process.versions.node);
+var rtp_mod;
+var util;
+if(is_nodejs){
+	rtp_mod = require("./rtp.js");
+	util = require('util');
+}else{
+	rtp_mod = {
+		Rtp,
+		PacketHeader,
+	};
+	util = {
+		TextDecoder,
+		TextEncoder,
+	};
+}
 
 var UPSTREAM_DOMAIN = "upstream.";
 var SERVER_DOMAIN = "";
@@ -143,8 +159,7 @@ function init_data_stream(callback) {
             rtp.set_callback(function(packet) {
                 conn.attr.timeout = new Date().getTime();
                 if (packet.GetPayloadType() == PT_CMD) {
-                    var cmd = packet.GetPacketData()
-                        .toString('ascii', packet.GetHeaderLength());
+                    var cmd = new util.TextDecoder().decode(packet.GetPayload());
                     var split = cmd.split('\"');
                     var id = split[1];
                     var value = split[3].split(' ');
@@ -563,7 +578,7 @@ function start_wrtc(callback) {
                             }
                             try {
                                 for (var i = 0; i < data.length; i++) {
-                                    dc.send(Uint8Array.from(data[i]).buffer);
+                                    dc.send(data[i]);
                                 }
                             } catch (e) {
                                 console.log('error on dc.send');
