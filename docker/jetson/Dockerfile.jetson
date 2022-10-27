@@ -1,5 +1,11 @@
-#sudo docker build -t pserver:${PSERVER_VERSION} -f Dockerfile.jetson .
+#sudo docker build -t pserver:${PSERVER_VERSION} --build-arg PSERVER_VERSION=${PSERVER_VERSION} -f Dockerfile.jetson .
+#sed s/@PSERVER_VERSION@/${PSERVER_VERSION}/g pserver.in | sudo tee /usr/bin/pserver
+#sudo chmod +x /usr/bin/pserver
+#sudo pserver -c /path/to/config.json
+
 FROM nvcr.io/nvidia/l4t-base:r32.5.0
+
+ARG PSERVER_VERSION=latest
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -18,7 +24,7 @@ RUN sed -i -z "s/} elsif (\$machine =~ m\/aarch64\/) {\n        \$arch = 'armv7l
 RUN nodebrew install v14.17.1 && \
     nodebrew use v14.17.1
 RUN npm config set unsafe-perm true && \
-    npm -g install node-pserver@0.1.12
+    npm -g install node-pserver@${PSERVER_VERSION}
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_calib3d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_core.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1
