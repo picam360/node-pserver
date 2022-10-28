@@ -1,4 +1,5 @@
 #sudo docker build -t pserver:${PSERVER_VERSION} --build-arg PSERVER_VERSION=${PSERVER_VERSION} -f Dockerfile.jetson .
+#echo "display-setup-script=/path/to/node-pserver/docker/jetson/xhost.sh" | sudo tee -a /etc/lightdm/lightdm.conf
 #sed s/@PSERVER_VERSION@/${PSERVER_VERSION}/g pserver.in | sudo tee /usr/bin/pserver
 #sudo chmod +x /usr/bin/pserver
 #sudo pserver -c /path/to/config.json
