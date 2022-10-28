@@ -3,6 +3,10 @@
 #sed s/@PSERVER_VERSION@/${PSERVER_VERSION}/g pserver.in | sudo tee /usr/bin/pserver
 #sudo chmod +x /usr/bin/pserver
 #sudo pserver -c /path/to/config.json
+#
+##docker container snipet
+#sudo docker run -d --name pserver --runtime nvidia -p 9001:9001 -v /etc/pserver:/etc/pserver --net=host -e DISPLAY=:0 -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native --privileged $PSERVER_DOCKER_IMAGE -c /path/to/config.json
+#sudo docker start -a pserver
 
 FROM nvcr.io/nvidia/l4t-base:r32.5.0
 
