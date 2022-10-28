@@ -8,8 +8,12 @@
 Description = pserver daemon
 
 [Service]
-ExecStart = /usr/bin/docker /usr/bin/pserver -c @CONFIG_PATH@
-ExecStop = -/usr/bin/docker kill pserver
+ExecStart = /usr/bin/pserver -c @CONFIG_PATH@
+
+##docker container type
+#ExecStart = /usr/bin/docker start -a pserver
+#ExecStop = -/usr/bin/docker kill pserver
+
 Restart = always
 RestartSec = 3
 Type = simple
