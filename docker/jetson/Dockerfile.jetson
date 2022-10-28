@@ -37,14 +37,14 @@ RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-p
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_flann.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libtbb.so.2 /usr/lib/aarch64-linux-gnu/libtbb.so.2
 
-COPY 99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
-COPY pserver-mono-config.json /root/mono-config.json
-COPY pserver-stereo-config.json /root/stereo-config.json
-COPY pserver-hq-mono-config.json /root/hq-mono-config.json
-COPY pserver-hq-stereo-config.json /root/hq-stereo-config.json
-COPY lens_params0.json /root/lens_params0.json
-COPY lens_params1.json /root/lens_params1.json
-COPY pviewer-config.json /root/.nodebrew/current/lib/node_modules/node-pserver/www/config.json
+COPY etc/udev/99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
+COPY etc/pserver/mono-config.json /root/mono-config.json
+COPY etc/pserver/stereo-config.json /root/stereo-config.json
+COPY etc/pserver/q-mono-config.json /root/hq-mono-config.json
+COPY etc/pserver/q-stereo-config.json /root/hq-stereo-config.json
+COPY etc/pserver/lens_params0.json /root/lens_params0.json
+COPY etc/pserver/lens_params1.json /root/lens_params1.json
+COPY www/config.json /root/.nodebrew/current/lib/node_modules/node-pserver/www/config.json
 
 EXPOSE 9001
 ENTRYPOINT ["pserver"]
