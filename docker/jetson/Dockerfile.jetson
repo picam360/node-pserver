@@ -1,5 +1,5 @@
 #sudo docker build -t pserver:${PSERVER_VERSION} --build-arg PSERVER_VERSION=${PSERVER_VERSION} -f Dockerfile.jetson .
-#sed -e s/@PSERVER_VERSION@/${PSERVER_VERSION}/g pserver.in | sudo tee /usr/bin/pserver
+#sed -e "s/@PSERVER_VERSION@/${PSERVER_VERSION}/g" pserver.in | sudo tee /usr/bin/pserver
 #sudo chmod +x /usr/bin/pserver
 #sudo pserver -c /path/to/config.json
 #

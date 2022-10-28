@@ -1,5 +1,5 @@
 ##regist service
-#sed -e s!@CONFIG_PATH@!/path/to/config.json!g pserver.pserver.in | sudo tee /etc/systemd/system/pserver.service
+#sed -e "s/@CONFIG_PATH@/\/path\/to\/config.json/g pserver.service.in | sudo tee /etc/systemd/system/pserver.service
 #sudo systemctl daemon-reload
 #sudo systemctl start pserver.service
 #sudo systemctl enable pserver.service
