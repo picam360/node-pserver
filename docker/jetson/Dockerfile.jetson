@@ -40,8 +40,8 @@ RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-p
 COPY etc/udev/99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
 COPY etc/pserver/mono-config.json /root/mono-config.json
 COPY etc/pserver/stereo-config.json /root/stereo-config.json
-COPY etc/pserver/q-mono-config.json /root/hq-mono-config.json
-COPY etc/pserver/q-stereo-config.json /root/hq-stereo-config.json
+COPY etc/pserver/hq-mono-config.json /root/hq-mono-config.json
+COPY etc/pserver/hq-stereo-config.json /root/hq-stereo-config.json
 COPY etc/pserver/lens_params0.json /root/lens_params0.json
 COPY etc/pserver/lens_params1.json /root/lens_params1.json
 COPY www/config.json /root/.nodebrew/current/lib/node_modules/node-pserver/www/config.json
