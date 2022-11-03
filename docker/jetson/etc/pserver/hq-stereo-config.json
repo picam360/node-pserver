@@ -1,24 +1,45 @@
 {
+    "meeting_enabled" : false,
     "wrtc_enabled" : false,
     "wrtc_key" : "unique_key",
     "stream_def" : "default",
     "stream_defs" : {
-        "default" : "mux name=mux ! pcuda_remapper name=remapper dup=1 debayer=I420 rg=1.01 bg=0.99 vg=1.0 sg=1.0 sh=10 ho=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265"
+        "default" : "dealer ! pipe name=encoder t=H265",
+#        "default" : "dealer ! pipe name=encoder t=H265 ! mux name=amux",
+        "calib" : "mux name=mux ! pgl_calibrator name=calibrator w=1024 h=1024 d=0 ! pipe name=encoder t=H265"
     },
     "plugin_paths" : [
+	    "plugins/network/host.js"
     ],
     "stream_params" : {
         "default" : {
+            "dealer.def" : "mux name=mux ! pcuda_remapper name=remapper debayer=I420 rg=1.01 bg=0.99 vg=1.0 sg=1.0 sh=10 ho=1 edge_r=\"0.1\" s=@APP.SIZE@ n_vstreams=1",
             "renderer.realtime" : "1",
+            "remapper.dup" : "1",
+            "splitter.aout0.oal_player.realtime" : "1",
+            "splitter.aout0.oal_player.buffer" : "0.2",
             "mux.vin0" : "nc_capture name=capture zerocopy=1 expo=0 gain=100 binning=1 cam_idx=1",
-            "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///root/lens_params0.json\" />",
+            "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens_params0.json\" />",
             "mux.vin1" : "nc_capture name=capture zerocopy=1 expo=0 gain=100 binning=1 cam_idx=0",
-            "mux.vin1.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///root/lens_params1.json\" />",
-            "encoder.def" : "gst-launch-1.0 -q fdsrc ! rawvideoparse width=@IWIDTH@ height=@IHEIGHT@ framerate=30/1 format=i420 ! omxh265enc iframeinterval=300 bitrate=2000000 control-rate=2 ! h265parse ! video/x-h265,stream-format=byte-stream,alignment=nal ! fdsink"
+            "mux.vin1.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens_params1.json\" />",
+            "encoder.def" : "gst-launch-1.0 -q fdsrc ! rawvideoparse width=@IWIDTH@ height=@IHEIGHT@ framerate=30/1 format=i420 ! omxh265enc iframeinterval=300 bitrate=@APP.BITRATE@ control-rate=2 ! h265parse ! video/x-h265,stream-format=byte-stream,alignment=nal ! fdsink"
+#            "amux.ain0" : "dup name=audio def='oal_capture name=capture' ! opus_encoder",
+#            "amux.ain0.capture.devicename" : "device name"
+        },
+        "calib" : {
+            "renderer.realtime" : "1",
+            "mux.vin0" : "nc_capture name=capture zerocopy=1 expo=0 gain=100 binning=1 debayer=1 cam_idx=1",
+            "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens_params0.json\" />",
+            "mux.vin1" : "nc_capture name=capture zerocopy=1 expo=0 gain=100 binning=1 debayer=1 cam_idx=0",
+            "mux.vin1.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens_params1.json\" />",
+            "encoder.def" : "gst-launch-1.0 fdsrc ! rawvideoparse width=@IWIDTH@ height=@IHEIGHT@ framerate=30/1 format=rgba ! videoconvert ! video/x-raw,format=I420 ! omxh265enc iframeinterval=300 bitrate=@APP.BITRATE@ control-rate=2 ! h265parse ! video/x-h265,stream-format=byte-stream,alignment=nal ! fdsink"
         }
     },
     "params" : {
+        "APP.BITRATE" : "4000000",
+#        "APP.SIZE" : "4096x2048"
         "APP.SIZE" : "2048x1024"
+#        "APP.SIZE" : "1024x512"
     },
     "pviewer_config_ext" : "",
     "license" : {
