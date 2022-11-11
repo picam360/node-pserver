@@ -119,7 +119,7 @@ function init_data_stream(callback) {
         } else {
             ip = " via websocket";
         }
-        if (rtp_rx_conns.length >= 2) { // exceed client
+        if (rtp_rx_conns.length >= (options.n_clients_limit || 2)) { // exceed client
             console.log("exceeded_num_of_clients : " + ip);
             rtp_mod.send_error(conn, "exceeded_num_of_clients");
             return;

@@ -147,6 +147,7 @@ async.waterfall([
 			config_json += "        \"plugins/pcuda_remapper_st.so\",\n";
 			config_json += "        \"plugins/v4l2_capture_st.so\",\n";
 			config_json += "        \"plugins/mjpeg_tegra_decoder_st.so\",\n";
+			config_json += "        \"plugins/v4l2_tegra_encoder_st.so\",\n";
 			config_json += "        \"plugins/mux_st.so\",\n";
 			config_json += "        \"plugins/demux_st.so\",\n";
 			config_json += "        \"plugins/oal_capture_st.so\",\n";
