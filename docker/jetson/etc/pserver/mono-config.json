@@ -1,29 +1,43 @@
 {
+    "n_clients_limit" : 2,
+    "meeting_enabled" : false,
     "wrtc_enabled" : false,
     "wrtc_key" : "unique_key",
     "stream_def" : "default",
     "stream_defs" : {
-        "default" : "v4l2_capture name=capture s=@APP.CAM0@ ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper ho=1 dup=1 edge_r=\"0.1\" s=@APP.SIZE@ ! pipe name=encoder t=H265"
+        "default" : "dealer ! v4l2_tegra_encoder name=encoder fps=15",
+        "calib" : "mux name=mux ! pgl_calibrator name=calibrator w=1024 h=1024 d=0 ! v4l2_tegra_encoder name=encoder fps=15"
     },
     "plugin_paths" : [
+	    "plugins/network/host.js"
     ],
     "stream_params" : {
         "default" : {
+            "dealer.def" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper ho=1 edge_r=\"0.1\" s=@APP.SIZE@ n_vstreams=1",
             "renderer.realtime" : "1",
-            "capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///root/lens_params0.json\" />",
-            "capture.set_sharpness" : "7",
-            "capture.set_backlight_compensation" : "30",
-            "encoder.def" : "gst-launch-1.0 -q fdsrc ! rawvideoparse width=@IWIDTH@ height=@IHEIGHT@ framerate=30/1 format=i420 ! omxh265enc iframeinterval=300 bitrate=4000000 control-rate=2 ! h265parse ! video/x-h265,stream-format=byte-stream,alignment=nal ! fdsink"
+            "mux.vin0" : "v4l2_capture name=capture s=@APP.CAM0@",
+            "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens-params0.json\" />",
+            "encoder.br" : "@APP.BITRATE_KBPS@"
+        },
+        "calib" : {
+            "renderer.realtime" : "1",
+            "mux.vin0" : "v4l2_capture name=capture s=@APP.CAM0@",
+            "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens-params0.json\" />",
+            "encoder.br" : "@APP.BITRATE_KBPS@"
         }
     },
     "params" : {
-        "APP.SIZE" : "1024x1024",
+        "APP.BITRATE_KBPS" : "1000",
 #4khdr
-        "APP.CAM0" : "3840x2880@15:/dev/video0"
+        "APP.CAM0" : "3840x2880@15:/dev/video0",
+        "APP.CAM1" : "3840x2880@15:/dev/video1",
 #8mp
-#        "APP.CAM0" : "3264x2448@15:/dev/video0"
+#       "APP.CAM0" : "3264x2448@15:/dev/video0",
+#       "APP.CAM1" : "3264x2448@15:/dev/video1",
 #wdr
-#        "APP.CAM0" : "2048x1536@15:/dev/video0"
+#       "APP.CAM0" : "2048x1536@15:/dev/video0",
+#       "APP.CAM1" : "2048x1536@15:/dev/video1",
+        "APP.SIZE" : "512x512"
     },
     "pviewer_config_ext" : "",
     "license" : {
