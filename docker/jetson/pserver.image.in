@@ -1,3 +1,18 @@
 #!/bin/bash
 
-docker run --rm --runtime nvidia --name pserver -p 9001:9001 -v /etc/pserver:/etc/pserver --net=host -e DISPLAY=:0 -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native --privileged pserver:@PSERVER_VERSION@ $@
+while getopts "c:" OPT
+do
+  case $OPT in
+    c)
+        CONFIG_PATH=$OPTARG
+        if [[ $CONFIG_PATH =~ ^/ ]]; then
+            CONFIG_DIR=$(dirname $CONFIG_PATH)
+        else
+            CONFIG_DIR=$(pwd)/$(dirname $CONFIG_PATH)
+        fi
+        CONFIG_DIR_PARAM="-v $CONFIG_DIR:$CONFIG_DIR"
+        ;;
+  esac
+done
+
+docker run --rm --runtime nvidia --name pserver -p 9001:9001 $CONFIG_DIR_PARAM --net=host -e DISPLAY=:0 -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native --privileged pserver:@PSERVER_VERSION@ $@
