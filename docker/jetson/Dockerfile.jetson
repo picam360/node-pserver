@@ -33,6 +33,7 @@ RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-p
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libtbb.so.2 /usr/lib/aarch64-linux-gnu/libtbb.so.2
 
 COPY etc/udev/99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
+COPY etc/udev/100-usb-serial.rules /etc/udev/rules.d/100-usb-serial.rules
 COPY www/config.json /root/.nodebrew/current/lib/node_modules/node-pserver/www/config.json
 
 EXPOSE 9001
