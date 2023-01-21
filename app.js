@@ -155,6 +155,8 @@ async.waterfall([
 			config_json += "        \"plugins/opus_encoder_st.so\",\n";
 			config_json += "        \"plugins/opus_decoder_st.so\",\n";
 			config_json += "        \"plugins/icm20948_st.so\",\n";
+			config_json += "        \"plugins/amimon_tx_st.so\",\n";
+			config_json += "        \"plugins/amimon_rx_st.so\",\n";
 		}else if(process.platform === 'win32') {
 			config_json += "        \"plugins/pcuda_remapper_st.so\",\n";
 			config_json += "        \"plugins/mjpeg_decoder_st.so\",\n";
