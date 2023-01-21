@@ -6,6 +6,7 @@
         "default" : "mixer"
     },
     "plugin_paths" : [
+	    "plugins/network/host.js"
     ],
     "debug" : 0
 }
