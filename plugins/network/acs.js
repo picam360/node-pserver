@@ -70,6 +70,21 @@ function getLeastUsedChannel() {
   });
 }
 
+function trafic(iface){
+    try {
+        const data = execSync(`cat /proc/net/dev | grep ${iface}`).toString();
+
+        const words = data.trim().split(/\s+/);
+        const receive = parseInt(words[1], 10);
+        const transmit = parseInt(words[9], 10);
+        return receive + transmit;
+    } 
+    catch (error) {
+        console.error(error);
+        return -1;
+    }
+}
+
 var self = {
     create_plugin: function (plugin_host) {
         console.log("create host plugin");
@@ -89,36 +104,57 @@ var self = {
                     if(!hotspot_exists){//suspend
                         return;
                     }
-                    try {
-                        execSync('nmcli con down hotspot');
-                    } 
-                    catch (error) {
-                        console.error(error);
+                    const trafic_s = trafic("wlan0");
+                    if(trafic_s < 0){//fail safe
+                        return;
                     }
+                    const check_trafic_sec = 10;
                     setTimeout(() => {
-                        getLeastUsedChannel().then(([chan, signals]) => {
-                            try {
-                                const chan_cur = execSync(`nmcli -t conn show hotspot | grep 802-11-wireless.channel: | sed -e 's/802-11-wireless.channel:\\(.*\\)/\\1/g'`).toString().trim();
-                                
-                                if(signals[chan] < signals[chan_cur]){
-                                    execSync(`nmcli con mod hotspot 802-11-wireless.channel ${chan}`);
-                                    console.log(`change channel ${chan_cur} to ${chan}`);
-                                }
-                            } 
-                            catch (error) {
-                                console.error(error);
-                            }
-                            finally{
-                                execSync('nmcli con up hotspot');
-                            }
-                        }).catch(error => {
+                        const trafic_e = trafic("wlan0");
+                        const trafic_bps = (trafic_e - trafic_s) * 8 / check_trafic_sec;
+                        if(trafic_bps > (options.acs_trafic_busy_kbps || 100) * 1000){//default 100kbps
+                            return;
+                        }
+                        try {
+                            console.log("start acs");
+                            execSync('nmcli con down hotspot');
+                        } 
+                        catch (error) {
                             console.error(error);
-                            execSync('nmcli con up hotspot');
-                        });
-                    }, 10000);
+                        }
+                        
+                        setTimeout(() => {
+                            getLeastUsedChannel().then(([chan, signals]) => {
+                                try {
+                                    const chan_cur = execSync(`nmcli -t conn show hotspot | grep 802-11-wireless.channel: | sed -e 's/802-11-wireless.channel:\\(.*\\)/\\1/g'`).toString().trim();
+                                    
+                                    if(signals[chan] < signals[chan_cur]){
+                                        execSync(`nmcli con mod hotspot 802-11-wireless.channel ${chan}`);
+                                        console.log(`change channel ${chan_cur} to ${chan}`);
+                                    }else{
+                                        console.log(`current channel ${chan_cur} is suitable`);
+                                    }
+                                } 
+                                catch (error) {
+                                    console.error(error);
+                                }
+                                finally{
+                                    execSync('nmcli con up hotspot');
+                                    console.log("finish acs");
+                                }
+                            }).catch(error => {
+                                console.error(error);
+                                execSync('nmcli con up hotspot');
+                            });
+                        }, (options.acs_scan_sec || 10) * 1000);
+                    }, check_trafic_sec * 1000);
                 };
-                acs();
-                setInterval(acs, 60*1000);
+                setTimeout(() => {
+                    acs();
+                    if(options.acs_interval_min){
+                        setInterval(acs, options.acs_interval_min * 60 * 1000);
+                    }
+                }, (options.acs_start_delay_sec || 10) * 1000);
                 
             },
             pst_started: function (pstcore, pst) {
