@@ -10,11 +10,11 @@ var PLUGIN_NAME = "acs";
 
 const chan_start = 1;
 const chan_end = 13;
-const hotspot_file = "/etc/NetworkManager/system-connections/hotspot";
+const nmcli_path = "/usr/bin/nmcli";
 
 function getLeastUsedChannel() {
   return new Promise((resolve, reject) => {
-    const nmcli = spawn('nmcli', ['-t', '-f', 'CHAN,SIGNAL', 'dev', 'wifi', 'list']);
+    const nmcli = spawn(nmcli_path, ['-t', '-f', 'CHAN,SIGNAL', 'dev', 'wifi', 'list']);
 
     let stdout = '';
     nmcli.stdout.on('data', data => {
@@ -96,7 +96,7 @@ var self = {
                 const acs = () => {
                     let hotspot_exists = true;
                     try {
-                        execSync('nmcli con show | grep "hotspot"').toString();
+                        execSync(`${nmcli_path} con show | grep "hotspot"`).toString();
                     } 
                     catch (error) {
                         hotspot_exists = false;
@@ -117,7 +117,7 @@ var self = {
                         }
                         try {
                             console.log("start acs");
-                            execSync('nmcli con down hotspot');
+                            execSync(`${nmcli_path} con down hotspot`);
                         } 
                         catch (error) {
                             console.error(error);
@@ -126,10 +126,10 @@ var self = {
                         setTimeout(() => {
                             getLeastUsedChannel().then(([chan, signals]) => {
                                 try {
-                                    const chan_cur = execSync(`nmcli -t conn show hotspot | grep 802-11-wireless.channel: | sed -e 's/802-11-wireless.channel:\\(.*\\)/\\1/g'`).toString().trim();
+                                    const chan_cur = execSync(`${nmcli_path} -t conn show hotspot | grep 802-11-wireless.channel: | sed -e 's/802-11-wireless.channel:\\(.*\\)/\\1/g'`).toString().trim();
                                     
                                     if(signals[chan] < signals[chan_cur]){
-                                        execSync(`nmcli con mod hotspot 802-11-wireless.channel ${chan}`);
+                                        execSync(`${nmcli_path} con mod hotspot 802-11-wireless.channel ${chan}`);
                                         console.log(`change channel ${chan_cur} to ${chan}`);
                                     }else{
                                         console.log(`current channel ${chan_cur} is suitable`);
@@ -139,12 +139,12 @@ var self = {
                                     console.error(error);
                                 }
                                 finally{
-                                    execSync('nmcli con up hotspot');
+                                    execSync(`${nmcli_path} con up hotspot`);
                                     console.log("finish acs");
                                 }
                             }).catch(error => {
                                 console.error(error);
-                                execSync('nmcli con up hotspot');
+                                execSync(`${nmcli_path} con up hotspot`);
                             });
                         }, (options.acs_scan_sec || 10) * 1000);
                     }, check_trafic_sec * 1000);
