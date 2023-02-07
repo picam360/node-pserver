@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
     nano \
     pkg-config \
     v4l-utils \
-    usbutils
+    usbutils \
+    network-manager
 RUN curl -L git.io/nodebrew | perl - setup
 RUN echo "export PATH=$HOME/.nodebrew/current/bin:\$PATH" >> $HOME/.bashrc
 ENV HOME /root
