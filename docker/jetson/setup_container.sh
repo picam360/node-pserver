@@ -17,7 +17,7 @@ else
     echo "pserver:${PSERVER_VERSION} not found"
     sudo docker build -t pserver:${PSERVER_VERSION} --build-arg PSERVER_VERSION=${PSERVER_VERSION} -f Dockerfile.jetson .
 fi
-sudo docker run -d --name pserver --runtime nvidia -p 9001:9001 $CONFIG_DIR_PARAM --net=host -e DISPLAY=:0 -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native --privileged pserver:${PSERVER_VERSION} -c ${CONFIG_PATH}
+sudo docker run -d --name pserver --runtime nvidia -p 9001:9001 $CONFIG_DIR_PARAM --net=host -e DISPLAY=:0 -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native -v /var/run/dbus:/var/run/dbus --privileged pserver:${PSERVER_VERSION} -c ${CONFIG_PATH}
 sed -e "s/@PSERVER_VERSION@/${PSERVER_VERSION}/g" pserver.container.in | sudo tee /usr/bin/pserver
 sudo chmod +x /usr/bin/pserver
 
