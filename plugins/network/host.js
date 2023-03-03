@@ -196,6 +196,7 @@ function init_data_stream(callback) {
                         rtp.send_packet(pack);
                         return;
                     } else if (value[0] == "set_timediff_ms") {
+                        rtp.timediff_ms = parseFloat(value[1]);
                         resolve();
                     }
                 }
