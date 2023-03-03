@@ -71,16 +71,14 @@ function init_data_stream(callback) {
     var num_of_frame = 0;
     var fps = 0;
 
-    rtp_mod.send_error = function(conn, err) {
-        setTimeout(function() {
-            var name = "error";
-            var value = err;
-            var status = "<picam360:status name=\"" + name +
-                "\" value=\"" + value + "\" />";
-//				var pack = rtp
-//					.build_packet(Buffer.from(status, 'ascii'), PT_STATUS);
-//				rtp.send_packet(pack);
-        }, 1000);
+    rtp_mod.send_error = function(rtp, err) {
+        var name = "error";
+        var value = err;
+        var status = "<picam360:status name=\"" + name +
+            "\" value=\"" + value + "\" />";
+        var pack = rtp
+            .build_packet(Buffer.from(status, 'ascii'), PT_STATUS);
+        rtp.send_packet(pack);
     }
 
     rtp_mod.remove_conn = function(conn) {
@@ -119,13 +117,6 @@ function init_data_stream(callback) {
         } else {
             ip = " via websocket";
         }
-        if (rtp_rx_conns.length >= (options.n_clients_limit || 2)) { // exceed client
-            console.log("exceeded_num_of_clients : " + ip);
-            rtp_mod.send_error(conn, "exceeded_num_of_clients");
-            return;
-        } else {
-            console.log("connection opend : " + ip);
-        }
         
         conn.frame_info = {
             stream_uuid: uuidgen(),
@@ -156,6 +147,20 @@ function init_data_stream(callback) {
         };
         var rtp = rtp_mod.Rtp(conn);
         conn.rtp = rtp;
+
+        if (rtp_rx_conns.length >= (options.n_clients_limit || 2)) { // exceed client
+            console.log("exceeded_num_of_clients : " + ip);
+            setTimeout(function() {
+                rtp_mod.send_error(rtp, "exceeded_num_of_clients");
+                setTimeout(function() {
+                    conn.close();
+                }, 1000);
+            }, 1000);
+            return;
+        } else {
+            console.log("connection opend : " + ip);
+        }
+
         new Promise((resolve, reject) => {
             rtp.set_callback(function(packet) {
                 conn.attr.timeout = new Date().getTime();
