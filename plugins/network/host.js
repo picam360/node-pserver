@@ -62,6 +62,7 @@ var options = {};
 var PLUGIN_NAME = "host";
 var m_pvf_filepath;
 var m_mt_host;
+var m_last_src = 0;
 
 function init_data_stream(callback) {
     console.log("init data stream");
@@ -147,6 +148,7 @@ function init_data_stream(callback) {
         };
         var rtp = rtp_mod.Rtp(conn);
         conn.rtp = rtp;
+        conn.rtp.src = ++m_last_src;
 
         if (rtp_rx_conns.length >= (options.n_clients_limit || 2)) { // exceed client
             console.log("exceeded_num_of_clients : " + ip);
@@ -199,9 +201,20 @@ function init_data_stream(callback) {
                         var pack = rtp
                             .build_packet(Buffer.from(status, 'ascii'), PT_STATUS);
                         rtp.send_packet(pack);
+                        if(!rtp.ping_cnt){
+                            rtp.ping_cnt = 1;
+
+                            var status = `<picam360:status name=\"src\" value=\"${rtp.src}\" />`;
+                            var pack = rtp
+                                .build_packet(Buffer.from(status, 'ascii'), PT_STATUS);
+                            rtp.send_packet(pack);
+                        }else{
+                            rtp.ping_cnt++;
+                        }
                         return;
                     } else if (value[0] == "set_timediff_ms") {
                         rtp.timediff_ms = parseFloat(value[1]);
+
                         resolve();
                     }
                 }
@@ -691,7 +704,7 @@ var self = {
             },
             pst_stopped: function (pstcore, pst) {
             },
-            command_handler: function (cmd) {
+            command_handler: function (cmd, conn) {
             },
         };
         return plugin;
