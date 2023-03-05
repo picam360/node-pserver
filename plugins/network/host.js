@@ -486,7 +486,11 @@ function start_websocket(callback) {
                 return dc._maxPayload;
             }
             send(data) {
+                if (dc.readyState == 3) {
+                    throw "already closed";
+                }
                 if (dc.readyState != 1) {
+                    console.log('something wrong : ' + dc.readyState);
                     return;
                 }
                 if (!Array.isArray(data)) {
@@ -499,12 +503,14 @@ function start_websocket(callback) {
                 } catch (e) {
                     console.log('error on dc.send');
                     this.close();
+                    throw e;
                 }
             }
             close() {
                 dc.close();
                 console.log('WebSocket closed');
                 rtp_mod.remove_conn(this);
+                this.emit('closed');
             }
         }
         var conn = new DataChannel();
@@ -604,6 +610,7 @@ function start_wrtc(callback) {
                                 throw "already closed";
                             }
                             if (dc.readyState != 'open') {
+                                console.log('something wrong : ' + dc.readyState);
                                 return;
                             }
                             if (!Array.isArray(data)) {
