@@ -600,6 +600,9 @@ function start_wrtc(callback) {
                             return dc.maxRetransmits;
                         }
                         send(data) {
+                            if (dc.readyState == 'closed') {
+                                throw "already closed";
+                            }
                             if (dc.readyState != 'open') {
                                 return;
                             }
@@ -613,12 +616,14 @@ function start_wrtc(callback) {
                             } catch (e) {
                                 console.log('error on dc.send');
                                 this.close();
+                                throw e;
                             }
                         }
                         close() {
                             dc.close();
                             pc.close();
                             console.log('Data channel closed');
+                            this.emit('closed');
                         }
                     }
                     dc.DataChannel = new DataChannel();
