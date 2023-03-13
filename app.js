@@ -7,16 +7,17 @@ var async = require('async');
 var fs = require("fs");
 var moment = require("moment");
 var sprintf = require('sprintf-js').sprintf;
+var express = require('express');
 
 var pstcore = require('node-pstcore');
 
+var http = null;
+
 var plugin_host = {};
 var plugins = [];
-var cmd2upstream_list = [];
 var cmd_list = [];
 var watches = [];
 var statuses = [];
-var filerequest_list = [];
 
 var upstream_info = "";
 var upstream_menu = "";
@@ -31,6 +32,84 @@ var options = {};
 var m_pvf_filepath = null;
 var m_calibrate = null;
 var m_calibrate_hq = null;
+
+function start_webserver(callback) { // start up websocket server
+    console.log("websocket server starting up");
+    var app = require('express')();
+    http = require('http').Server(app);
+    app
+        .get('/img/*.jpeg', function(req, res) {
+            var url = req.url.split("?")[0];
+            var query = req.url.split("?")[1];
+            var filepath = 'userdata/' + url.split("/")[2];
+            console.log(url);
+            console.log(query);
+            console.log(filepath);
+            fs
+                .readFile(filepath, function(err, data) {
+                    if (err) {
+                        res.writeHead(404);
+                        res.end();
+                        console.log("404");
+                    } else {
+                        res
+                            .writeHead(200, {
+                                'Content-Type': 'image/jpeg',
+                                'Content-Length': data.length,
+                                'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+                                'Expires': '-1',
+                                'Pragma': 'no-cache',
+                            });
+                        res.end(data);
+                        console.log("200");
+                    }
+                });
+        });
+    app.get('/img/*.mp4', function(req, res) {
+        var url = req.url.split("?")[0];
+        var query = req.url.split("?")[1];
+        var filepath = 'userdata/' + url.split("/")[2];
+        console.log(url);
+        console.log(query);
+        console.log(filepath);
+        fs.readFile(filepath, function(err, data) {
+            if (err) {
+                res.writeHead(404);
+                res.end();
+                console.log("404");
+            } else {
+                var range = req.headers.range // bytes=0-1
+                if (!range) {
+                    res.writeHead(200, {
+                        "Content-Type": "video/mp4",
+                        "X-UA-Compatible": "IE=edge;chrome=1",
+                        'Content-Length': data.length
+                    });
+                    res.end(data)
+                } else {
+                    var total = data.length;
+                    var split = range.split(/[-=]/);
+                    var ini = +split[1];
+                    var end = split[2] ? +split[2] : total - 1;
+                    var chunkSize = end - ini + 1;
+                    res.writeHead(206, {
+                        "Content-Range": "bytes " + ini + "-" + end +
+                            "/" + total,
+                        "Accept-Ranges": "bytes",
+                        "Content-Length": chunkSize,
+                        "Content-Type": "video/mp4",
+                    })
+                    res.end(data.slice(ini, chunkSize + ini))
+                }
+            }
+        });
+    });
+    app.use(express.static('www')); // this need be set
+    http.listen(9001, function() {
+        console.log('listening on *:9001');
+    });
+    callback(null);
+}
 
 async.waterfall([
 	function(callback) { // argv
@@ -251,7 +330,7 @@ async.waterfall([
 		function command_handler(value, conn) {
 			var split = value.split(' ');
 			var domain = split[0].split('.');
-			if (domain.length != 1 && domain[0] != "picam360_server") {
+			if (domain.length != 1 && domain[0] != "pserver") {
 				// delegate to plugin
 				for (var i = 0; i < plugins.length; i++) {
 					if (plugins[i].name && plugins[i].name == domain[0]) {
@@ -264,31 +343,8 @@ async.waterfall([
 				}
 				return;
 			}
-			if (split[0] == "ping") { } else if (split[0] == "get_file") {
-				filerequest_list.push({
-					filename: split[1],
-					key: split[2],
-					conn: conn
-				});
-			} else if (split[0] == "set_vstream_param") {
-				var id = conn.frame_info.renderer_uuid;
-				if (id) {
-					var cmd = CAPTURE_DOMAIN + value + " -u " + id;
-					plugin_host.send_command(cmd, conn);
-
-					var split = value.split(' ');
-					for (var i = 0; i < split.length; i++) {
-						var separator = (/[=,\"]/);
-						var _split = split[i].split(separator);
-						if (_split[0] == "view_quat") {
-							m_view_quaternion = [parseFloat(_split[1]),
-							parseFloat(_split[2]),
-							parseFloat(_split[3]),
-							parseFloat(_split[4])
-							];
-						}
-					}
-				}
+			if (split[0] == "ping") {
+				//
 			} else if (split[0] == "snap") {
 				var id = conn.frame_info.snapper_uuid;
 				if (id) {
@@ -328,71 +384,17 @@ async.waterfall([
 				}
 			}
 		}
-
-		function send_file(filename, key, conn, data) {
-			var chunksize = 63 * 1024;
-			var length;
-			for (var i = 0, seq = 0; i < data.length; i += length, seq++) {
-				var eof;
-				if (i + chunksize >= data.length) {
-					eof = true;
-					length = data.length - i;
-				} else {
-					eof = false;
-					length = chunksize;
-				}
-				var header_str = sprintf("<picam360:file name=\"%s\" key=\"%s\" status=\"200\" seq=\"%d\" eof=\"%s\" />", filename, key, seq, eof
-					.toString());
-				var header = Buffer.from(header_str, 'ascii');
-				var len = 2 + header.length + length;
-				var buffer = Buffer.alloc(len);
-				buffer.writeUInt16BE(header.length, 0);
-				header.copy(buffer, 2);
-				data.copy(buffer, 2 + header.length, i, i + length);
-				var pack = conn.rtp.build_packet(buffer, PT_FILE);
-				conn.rtp.send_packet(pack);
-			}
-		}
-
-		function filerequest_handler(filename, key, conn) {
-			fs.readFile("www/" + filename, function(err, data) {
-				if (err) {
-					var header_str = "<picam360:file name=\"" + filename +
-						"\" key=\"" + key + "\" status=\"404\" />";
-					data = Buffer.alloc(0);
-					console.log("unknown :" + filename + ":" + key);
-					var header = Buffer.from(header_str, 'ascii');
-					var len = 2 + header.length;
-					var buffer = Buffer.alloc(len);
-					buffer.writeUInt16BE(header.length, 0);
-					header.copy(buffer, 2);
-//					var pack = rtp.build_packet(buffer, PT_FILE);
-//					rtp.send_packet(pack);
-				} else {
-					send_file(filename, key, conn, data);
-				}
-			});
-		}
 		setInterval(function() {
 			if (cmd_list.length) {
 				var cmd = cmd_list.shift();
 				command_handler(cmd.value, cmd.conn);
 			}
-			if (filerequest_list.length) {
-				var filerequest = filerequest_list.shift();
-				filerequest_handler(filerequest.filename, filerequest.key, filerequest.conn);
-			}
 		}, 20);
 		plugin_host.send_command = function(value, conn) {
-			if (value.startsWith(UPSTREAM_DOMAIN)) {
-				cmd2upstream_list
-					.push(value.substr(UPSTREAM_DOMAIN.length));
-			} else {
-				cmd_list.push({
-					value: value,
-					conn: conn
-				});
-			}
+			cmd_list.push({
+				value: value,
+				conn: conn
+			});
 		};
 		plugin_host.get_vehicle_quaternion = function() {
 			return upstream_quaternion;
@@ -408,6 +410,9 @@ async.waterfall([
 		};
 		plugin_host.add_status = function(name, callback) {
 			statuses[name] = callback;
+		};
+		plugin_host.get_http = function() {
+			return http;
 		};
 
 		plugin_host.add_watch(UPSTREAM_DOMAIN + "quaternion", function(
@@ -454,6 +459,11 @@ async.waterfall([
 		});
 
 		callback(null);
+	},
+	function(callback) {
+		start_webserver(() => {
+			callback(null);
+		});
 	},
 	function(callback) {
 		// load plugin

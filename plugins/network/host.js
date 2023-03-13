@@ -4,7 +4,6 @@ var fs = require("fs");
 var sprintf = require('sprintf-js').sprintf;
 var uuidgen = require('uuid/v4');
 var EventEmitter = require('eventemitter3');
-var express = require('express');
 var xmlhttprequest = require('xmlhttprequest');
 global.XMLHttpRequest = xmlhttprequest.XMLHttpRequest;
 
@@ -56,10 +55,9 @@ var upstream_menu = "";
 var upstream_quaternion = [0, 0, 0, 1.0];
 var upstream_north = 0;
 
-var http = null;
-
 var options = {};
 var PLUGIN_NAME = "host";
+var m_plugin_host;
 var m_pvf_filepath;
 var m_mt_host;
 var m_last_src = 0;
@@ -270,7 +268,7 @@ function init_data_stream(callback) {
                                     console.log("err :" + err);
                                 } else {
                                     var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", 
-                                        "network", "pviewer_config_ext", data_str.replace(/\n/g, '\\n').replace(/"/g, '\\"'));
+                                        "network", "pviewer_config_ext", Buffer.from(data_str).toString('base64'));
                                     conn.attr.param_pendings.push(msg);
                                 }
                             });
@@ -355,25 +353,30 @@ function init_data_stream(callback) {
                     if(!conn.attr.pst){
                         return;
                     }
-                    var str = (new TextDecoder)
-                        .decode(packet.GetPayload());
+                    var str = (new TextDecoder).decode(packet.GetPayload());
                     try{
                         var list = JSON.parse(str);
                         for(var ary of list){
-                            conn.attr.in_pt_set_param = true;
-                            pstcore.pstcore_set_param(conn.attr.pst, ary[0], ary[1], ary[2]);
-                            conn.attr.in_pt_set_param = false;
+                            if(ary[0] == "network"){
+                                if(ary[1] == "get_file"){
+                                    var [filename, key] = ary[2].split(' ');
+                                    filerequest_handler(filename, key, conn);
+                                }
+                            }else{
+                                conn.attr.in_pt_set_param = true;
+                                pstcore.pstcore_set_param(conn.attr.pst, ary[0], ary[1], ary[2]);
+                                conn.attr.in_pt_set_param = false;
+                            }
                         }
                     }catch{
                         console.log("fail parse json", str);
                     }
                 }else if (packet.GetPayloadType() == PT_CMD) {
-                    var cmd = packet.GetPacketData().toString('ascii', packet
-                        .GetHeaderLength());
-                    var split = cmd.split('\"');
+                    var str = (new TextDecoder).decode(packet.GetPayload());
+                    var split = str.split('\"');
                     var id = split[1];
                     var value = split[3];
-                    plugin_host.send_command(value, conn);
+                    m_plugin_host.send_command(value, conn);
                     if (options.debug >= 5) {
                         console.log("cmd got :" + cmd);
                     }
@@ -385,86 +388,10 @@ function init_data_stream(callback) {
     }
     callback(null);
 }
-function start_webserver(callback) { // start up websocket server
-    console.log("websocket server starting up");
-    var app = require('express')();
-    http = require('http').Server(app);
-    app
-        .get('/img/*.jpeg', function(req, res) {
-            var url = req.url.split("?")[0];
-            var query = req.url.split("?")[1];
-            var filepath = 'userdata/' + url.split("/")[2];
-            console.log(url);
-            console.log(query);
-            console.log(filepath);
-            fs
-                .readFile(filepath, function(err, data) {
-                    if (err) {
-                        res.writeHead(404);
-                        res.end();
-                        console.log("404");
-                    } else {
-                        res
-                            .writeHead(200, {
-                                'Content-Type': 'image/jpeg',
-                                'Content-Length': data.length,
-                                'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-                                'Expires': '-1',
-                                'Pragma': 'no-cache',
-                            });
-                        res.end(data);
-                        console.log("200");
-                    }
-                });
-        });
-    app.get('/img/*.mp4', function(req, res) {
-        var url = req.url.split("?")[0];
-        var query = req.url.split("?")[1];
-        var filepath = 'userdata/' + url.split("/")[2];
-        console.log(url);
-        console.log(query);
-        console.log(filepath);
-        fs.readFile(filepath, function(err, data) {
-            if (err) {
-                res.writeHead(404);
-                res.end();
-                console.log("404");
-            } else {
-                var range = req.headers.range // bytes=0-1
-                if (!range) {
-                    res.writeHead(200, {
-                        "Content-Type": "video/mp4",
-                        "X-UA-Compatible": "IE=edge;chrome=1",
-                        'Content-Length': data.length
-                    });
-                    res.end(data)
-                } else {
-                    var total = data.length;
-                    var split = range.split(/[-=]/);
-                    var ini = +split[1];
-                    var end = split[2] ? +split[2] : total - 1;
-                    var chunkSize = end - ini + 1;
-                    res.writeHead(206, {
-                        "Content-Range": "bytes " + ini + "-" + end +
-                            "/" + total,
-                        "Accept-Ranges": "bytes",
-                        "Content-Length": chunkSize,
-                        "Content-Type": "video/mp4",
-                    })
-                    res.end(data.slice(ini, chunkSize + ini))
-                }
-            }
-        });
-    });
-    app.use(express.static('www')); // this need be set
-    http.listen(9001, function() {
-        console.log('listening on *:9001');
-    });
-    callback(null);
-}
 function start_websocket(callback) {
     // websocket
     var WebSocket = require("ws");
+    var http = m_plugin_host.get_http();
     var server = new WebSocket.Server({ server: http });
 
     server.on("connection", dc => {
@@ -695,19 +622,63 @@ function start_wrtc(callback) {
     callback(null);
 }
 
+function send_file(filename, key, conn, data) {
+    var chunksize = 63 * 1024;
+    var length;
+    for (var i = 0, seq = 0; i < data.length; i += length, seq++) {
+        var eof;
+        if (i + chunksize >= data.length) {
+            eof = true;
+            length = data.length - i;
+        } else {
+            eof = false;
+            length = chunksize;
+        }
+        var header_str = sprintf("<picam360:file name=\"%s\" key=\"%s\" status=\"200\" seq=\"%d\" eof=\"%s\" />", filename, key, seq, eof
+            .toString());
+        var header = Buffer.from(header_str, 'ascii');
+        var len = 2 + header.length + length;
+        var buffer = Buffer.alloc(len);
+        buffer.writeUInt16BE(header.length, 0);
+        header.copy(buffer, 2);
+        data.copy(buffer, 2 + header.length, i, i + length);
+        var pack = conn.rtp.build_packet(buffer, PT_FILE);
+        conn.rtp.send_packet(pack);
+    }
+}
+
+function filerequest_handler(filename, key, conn) {
+    fs.readFile("www/" + filename, function(err, data) {
+        if (err) {
+            var header_str = "<picam360:file name=\"" + filename +
+                "\" key=\"" + key + "\" status=\"404\" />";
+            data = Buffer.alloc(0);
+            console.log("unknown :" + filename + ":" + key);
+            var header = Buffer.from(header_str, 'ascii');
+            var len = 2 + header.length;
+            var buffer = Buffer.alloc(len);
+            buffer.writeUInt16BE(header.length, 0);
+            header.copy(buffer, 2);
+//					var pack = rtp.build_packet(buffer, PT_FILE);
+//					rtp.send_packet(pack);
+        } else {
+            send_file(filename, key, conn, data);
+        }
+    });
+}
+
 var self = {
     create_plugin: function (plugin_host) {
+        m_plugin_host = plugin_host;
         console.log("create host plugin");
         var plugin = {
             name: PLUGIN_NAME,
             init_options: function (_options) {
                 options = _options;
                 init_data_stream(() => {
-                    start_webserver(() => {
-                        start_websocket(() => {
-                            start_wrtc(() => {
-                                console.log("host initiation done!");
-                            });
+                    start_websocket(() => {
+                        start_wrtc(() => {
+                            console.log("host initiation done!");
                         });
                     });
                 });
