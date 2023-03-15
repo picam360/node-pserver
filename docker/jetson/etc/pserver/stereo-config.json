@@ -17,16 +17,24 @@
             "renderer.realtime" : "1",
             "mux.vin0" : "v4l2_capture name=capture s=@APP.CAM0@",
             "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens-params0.json\" />",
+            "mux.vin0.capture.set_sharpness" : "7",
+            "mux.vin0.capture.set_backlight_compensation" : "30",
             "mux.vin1" : "v4l2_capture name=capture s=@APP.CAM1@",
             "mux.vin1.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens-params1.json\" />",
+            "mux.vin1.capture.set_sharpness" : "7",
+            "mux.vin1.capture.set_backlight_compensation" : "30",
             "encoder.br" : "@APP.BITRATE_KBPS@"
         },
         "calib" : {
             "renderer.realtime" : "1",
             "mux.vin0" : "v4l2_capture name=capture s=@APP.CAM0@",
             "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens-params0.json\" />",
+            "mux.vin0.capture.set_sharpness" : "7",
+            "mux.vin0.capture.set_backlight_compensation" : "30",
             "mux.vin1" : "v4l2_capture name=capture s=@APP.CAM1@",
             "mux.vin1.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens-params1.json\" />",
+            "mux.vin1.capture.set_sharpness" : "7",
+            "mux.vin1.capture.set_backlight_compensation" : "30",
             "encoder.br" : "@APP.BITRATE_KBPS@"
         }
     },
