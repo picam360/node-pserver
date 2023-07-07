@@ -91,16 +91,7 @@ function init_data_stream(callback) {
                 clearInterval(conn.attr.timer2);
                 conn.close();
                 if(conn.attr.pst){
-
-                    //TODO
-                    // //let plugins know pst destroyed
-                    // for (var i = 0; i < plugins.length; i++) {
-                    //     if (plugins[i].pst_stopped) {
-                    //         plugins[i].pst_stopped(pstcore, conn.attr.pst);
-                    //         break;
-                    //     }
-                    // }
-
+                    m_plugin_host.fire_pst_started(conn.attr.pst);
                     pstcore.pstcore_destroy_pstreamer(conn.attr.pst);
                     conn.attr.pst = 0;
                 }
@@ -295,15 +286,6 @@ function init_data_stream(callback) {
                             rtp_mod.remove_conn(conn);
                         }
                     });
-        
-                    //TODO
-                    // //let plugins know pst created
-                    // for (var i = 0; i < plugins.length; i++) {
-                    //     if (plugins[i].pst_started) {
-                    //         plugins[i].pst_started(pstcore, conn.attr.pst);
-                    //         break;
-                    //     }
-                    // }
             
                     pstcore.pstcore_add_set_param_done_callback(conn.attr.pst, (msg)=>{
                         //console.log("set_param " + msg);
@@ -312,6 +294,7 @@ function init_data_stream(callback) {
                         }
                         conn.attr.param_pendings.push(msg);
                     });
+                    m_plugin_host.fire_pst_started(conn.attr.pst);
                     pstcore.pstcore_start_pstreamer(conn.attr.pst);
                 });
             }

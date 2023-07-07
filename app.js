@@ -414,6 +414,20 @@ async.waterfall([
 		plugin_host.get_http = function() {
 			return http;
 		};
+		plugin_host.fire_pst_started = function(pst) {
+			for (var i = 0; i < plugins.length; i++) {
+				if (plugins[i].pst_started) {
+					plugins[i].pst_started(pstcore, pst);
+				}
+			}
+		};
+		plugin_host.fire_pst_stopped = function(pst) {
+			for (var i = 0; i < plugins.length; i++) {
+				if (plugins[i].pst_stopped) {
+					plugins[i].pst_stopped(pstcore, pst);
+				}
+			}
+		};
 
 		plugin_host.add_watch(UPSTREAM_DOMAIN + "quaternion", function(
 			value) {

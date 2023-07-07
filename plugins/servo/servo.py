@@ -8,7 +8,7 @@ class Params:
         self.freq_hz = 50
         self.min_us = 500
         self.max_us = 2500
-        self.out_pin = 11
+        self.out_pin = 0
 
 class Servo:
     def init(self, address=0x40, freq=50, min_us=500, max_us=2500, degrees = 180):
