@@ -2,12 +2,11 @@
 process.chdir(__dirname);
 
 const fs = require("fs");
-const rimraf = require("rimraf");
 const { execSync } = require('child_process');
 
 try{
 	if (fs.existsSync('www')) {
-		rimraf.sync('www');
+		fs.rmSync('www', {recursive:true, force:true});
 	}
 }catch(err){
 	console.log("error on rm www:" + err);
