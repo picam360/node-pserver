@@ -249,8 +249,7 @@ function init_data_stream(callback) {
                                 }
                                 pstcore.pstcore_set_param(conn.attr.pst, name, param, value);
         
-                                var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", name, param, value.replace(/"/g, '\\"'));
-                                conn.attr.param_pendings.push(msg);
+                                conn.attr.param_pendings.push([name, param, value]);
                             }
                         }
                         if(options['pviewer_config_ext']) {
@@ -258,9 +257,7 @@ function init_data_stream(callback) {
                                 if (err) {
                                     console.log("err :" + err);
                                 } else {
-                                    var msg = sprintf("[\"%s\",\"%s\",\"%s\"]", 
-                                        "network", "pviewer_config_ext", Buffer.from(data_str).toString('base64'));
-                                    conn.attr.param_pendings.push(msg);
+                                    conn.attr.param_pendings.push(["network", "pviewer_config_ext", data_str]);
                                 }
                             });
                         }
@@ -287,12 +284,18 @@ function init_data_stream(callback) {
                         }
                     });
             
-                    pstcore.pstcore_add_set_param_done_callback(conn.attr.pst, (msg)=>{
-                        //console.log("set_param " + msg);
+                    pstcore.pstcore_add_set_param_done_callback(conn.attr.pst, (pst_name, param, value) => {
                         if(conn.attr.in_pt_set_param){//prevent loop back
                             return;
                         }
-                        conn.attr.param_pendings.push(msg);
+                        if(value.length > 1024){
+                            return;
+                        }
+                        if(pst_name == "renderer" && param == "overlay"){
+                            return;
+                        }
+                        conn.attr.param_pendings.push([pst_name, param, value]);
+                        //console.log(pst_name, param, value);
                     });
                     m_plugin_host.fire_pst_started(conn.attr.pst);
                     pstcore.pstcore_start_pstreamer(conn.attr.pst);
@@ -309,7 +312,7 @@ function init_data_stream(callback) {
                         throw "TIMEOUT";
                     }
                     if(conn.attr.param_pendings.length > 0) {
-                        var msg = "[" + conn.attr.param_pendings.join(',') + "]";
+                        var msg = JSON.stringify(conn.attr.param_pendings);
                         var pack = rtp.build_packet(Buffer.from(msg, 'ascii'), PT_SET_PARAM);
                         rtp.send_packet(pack);
                         conn.attr.param_pendings = [];

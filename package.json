@@ -33,6 +33,6 @@
   "rimraf": "*",
   "python-shell": "*",
   "quaternion": "^1.4.2",
-  "node-pstcore": "0.4.4"
+  "node-pstcore": "0.4.9"
  }
 }
