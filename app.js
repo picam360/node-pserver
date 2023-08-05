@@ -333,7 +333,7 @@ async.waterfall([
 		// plugin host
 		var m_view_quaternion = [0, 0, 0, 1.0];
 		// cmd handling
-		function command_handler(value, conn) {
+		function command_handler(value, callback, ext) {
 			var split = value.split(' ');
 			var domain = split[0].split('.');
 			if (domain.length != 1 && domain[0] != "pserver") {
@@ -342,7 +342,7 @@ async.waterfall([
 					if (plugins[i].name && plugins[i].name == domain[0]) {
 						if (plugins[i].command_handler) {
 							split[0] = split[0].substring(split[0].indexOf('.') + 1);
-							plugins[i].command_handler(split.join(' '));
+							plugins[i].command_handler(split.join(' '), callback, ext);
 							break;
 						}
 					}
@@ -360,7 +360,7 @@ async.waterfall([
 					cmd += " -p base_path=" + filepath;
 					cmd += " -p mode=RECORD";
 					cmd += " -u " + id;
-					plugin_host.send_command(cmd, conn);
+					plugin_host.send_command(cmd, callback, ext);
 					console.log("snap");
 				}
 			} else if (split[0] == "start_record") {
@@ -374,7 +374,7 @@ async.waterfall([
 					cmd += " -p base_path=" + filepath;
 					cmd += " -p mode=RECORD";
 					cmd += " -u " + id;
-					plugin_host.send_command(cmd, conn);
+					plugin_host.send_command(cmd, callback, ext);
 					conn.frame_info.is_recording = true;
 					console.log("start record");
 				}
@@ -384,7 +384,7 @@ async.waterfall([
 					var cmd = CAPTURE_DOMAIN + "set_vstream_param";
 					cmd += " -p mode=IDLE";
 					cmd += " -u " + id;
-					plugin_host.send_command(cmd, conn);
+					plugin_host.send_command(cmd, callback, ext);
 					conn.frame_info.is_recording = false;
 					console.log("stop record");
 				}
@@ -392,15 +392,12 @@ async.waterfall([
 		}
 		setInterval(function() {
 			if (cmd_list.length) {
-				var cmd = cmd_list.shift();
-				command_handler(cmd.value, cmd.conn);
+				var params = cmd_list.shift();
+				command_handler(params.cmd, params.callback, params.ext);
 			}
 		}, 20);
-		plugin_host.send_command = function(value, conn) {
-			cmd_list.push({
-				value: value,
-				conn: conn
-			});
+		plugin_host.send_command = function(cmd, callback, ext) {
+			cmd_list.push({ cmd, callback, ext });
 		};
 		plugin_host.get_vehicle_quaternion = function() {
 			return upstream_quaternion;

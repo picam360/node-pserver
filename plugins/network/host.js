@@ -91,7 +91,7 @@ function init_data_stream(callback) {
                 clearInterval(conn.attr.timer2);
                 conn.close();
                 if(conn.attr.pst){
-                    m_plugin_host.fire_pst_started(conn.attr.pst);
+                    m_plugin_host.fire_pst_stopped(conn.attr.pst);
                     pstcore.pstcore_destroy_pstreamer(conn.attr.pst);
                     conn.attr.pst = 0;
                 }
@@ -361,8 +361,13 @@ function init_data_stream(callback) {
                     var str = (new TextDecoder).decode(packet.GetPayload());
                     var split = str.split('\"');
                     var id = split[1];
-                    var value = split[3];
-                    m_plugin_host.send_command(value, conn);
+                    var value = decodeURIComponent(split[3]);
+                    m_plugin_host.send_command(value, (ret, ext) => {
+                        var xml = "<picam360:command id=\"" + ext.id +
+                            "\" value=\"" + encodeURIComponent(ret) + "\" />"
+                        var pack = conn.rtp.build_packet(xml, PT_CMD);
+                        ext.conn.rtp.send_packet(pack);
+                    }, {conn, id});
                     if (options.debug >= 5) {
                         console.log("cmd got :" + cmd);
                     }
