@@ -240,6 +240,7 @@ async.waterfall([
 			config_json += "        \"plugins/opus_encoder_st.so\",\n";
 			config_json += "        \"plugins/opus_decoder_st.so\",\n";
 			config_json += "        \"plugins/icm20948_st.so\",\n";
+			config_json += "        \"plugins/pantilt_st.so\",\n";
 			config_json += "        \"plugins/amimon_tx_st.so\",\n";
 			config_json += "        \"plugins/amimon_rx_st.so\",\n";
 		}else if(process.platform === 'win32') {
