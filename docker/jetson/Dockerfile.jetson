@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     v4l-utils \
     usbutils \
-    network-manager
+    network-manager \
+    p7zip-full p7zip-rar
 RUN curl -L git.io/nodebrew | perl - setup
 RUN echo "export PATH=$HOME/.nodebrew/current/bin:\$PATH" >> $HOME/.bashrc
 ENV HOME /root
