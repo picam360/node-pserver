@@ -40,6 +40,11 @@ RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-p
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_features2d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_flann.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_calib3d.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.5
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_core.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_features2d.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.5
+RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_flann.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.5
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libtbb.so.2 /usr/lib/aarch64-linux-gnu/libtbb.so.2
 
 COPY etc/udev/99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
