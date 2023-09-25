@@ -1,6 +1,6 @@
 {
  "name": "node-pserver",
- "version": "0.4.7",
+ "version": "0.4.8",
  "bin": {
   "pserver": "app.js"
  },
@@ -26,8 +26,6 @@
   "node-gpsd": "*",
   "socket.io": "*",
   "sprintf-js": "*",
-  "uuid": "*",
-  "uuid-parse": "*",
   "wrtc": "^0.4.6",
   "macaddress": "^0.5.1",
   "xmlhttprequest": "^1.8.0",
