@@ -33,4 +33,5 @@ sudo sed -i "s/%SSID%/$SSID/g" /etc/NetworkManager/system-connections/hotspot
 sudo sed -i "s/%PWD%/$PWD/g" /etc/NetworkManager/system-connections/hotspot
 sudo sed -i "s/%ADDRESS%/$ADDRESS/g" /etc/NetworkManager/system-connections/hotspot
 sudo sed -i "s/%MACADDRESS%/$MACADDRESS/g" /etc/NetworkManager/system-connections/hotspot
+sudo chmod 600 /etc/NetworkManager/system-connections/hotspot
 sudo nmcli connection load /etc/NetworkManager/system-connections/hotspot

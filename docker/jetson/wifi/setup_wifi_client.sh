@@ -34,4 +34,5 @@ sudo sed -i "s/%SSID%/$SSID/g" /etc/NetworkManager/system-connections/$SSID
 sudo sed -i "s/%PWD%/$PWD/g" /etc/NetworkManager/system-connections/$SSID
 sudo sed -i "s/%ADDRESS%/$ADDRESS/g" /etc/NetworkManager/system-connections/$SSID
 sudo sed -i "s/%MACADDRESS%/$MACADDRESS/g" /etc/NetworkManager/system-connections/$SSID
+sudo chmod 600 /etc/NetworkManager/system-connections/$SSID
 sudo nmcli connection load /etc/NetworkManager/system-connections/$SSID
