@@ -1,6 +1,6 @@
 {
  "name": "node-pserver",
- "version": "0.4.9",
+ "version": "0.4.10",
  "bin": {
   "pserver": "app.js"
  },
@@ -34,6 +34,6 @@
   "rimraf": "*",
   "python-shell": "*",
   "quaternion": "^1.4.2",
-  "node-pstcore": "0.4.15"
+  "node-pstcore": "0.4.17"
  }
 }
