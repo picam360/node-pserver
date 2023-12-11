@@ -12,6 +12,7 @@ var express = require('express');
 var pstcore = require('node-pstcore');
 
 var http = null;
+var https = null;
 
 var plugin_host = {};
 var plugins = [];
@@ -37,6 +38,25 @@ function start_webserver(callback) { // start up websocket server
     console.log("websocket server starting up");
     var app = require('express')();
     http = require('http').Server(app);
+
+	var https_key_filepath = 'certs/https/localhost-key.pem';
+	var https_cert_filepath = 'certs/https/localhost.pem';
+	if(options['https_key_filepath'] &&
+	   options['https_cert_filepath']){
+		if(fs.existsSync(options['https_key_filepath']) &&
+		   fs.existsSync(options['https_cert_filepath'])){
+			https_key_filepath = options['https_key_filepath'];
+			https_cert_filepath = options['https_cert_filepath'];
+		}else{
+			console.log("https key cert file not found.");
+		}
+	}
+	var https_options = {
+		key: fs.readFileSync(https_key_filepath),
+		cert: fs.readFileSync(https_cert_filepath)
+	};
+	https = require('https').Server(https_options, app);
+
     app
         .get('/img/*.jpeg', function(req, res) {
             var url = req.url.split("?")[0];
@@ -105,8 +125,20 @@ function start_webserver(callback) { // start up websocket server
         });
     });
     app.use(express.static('www')); // this need be set
-    http.listen(9001, function() {
-        console.log('listening on *:9001');
+	var http_port = 9001;
+	if(options['http_port']){
+		http_port = options['http_port'];
+	}
+    http.listen(http_port, function() {
+        console.log('listening http on *:' + http_port);
+    });
+
+	var https_port = 9002;
+	if(options['https_port']){
+		https_port = options['https_port'];
+	}
+    https.listen(https_port, function() {
+        console.log('listening https on *:' + https_port);
     });
     callback(null);
 }
@@ -417,6 +449,9 @@ async.waterfall([
 		};
 		plugin_host.get_http = function() {
 			return http;
+		};
+		plugin_host.get_https = function() {
+			return https;
 		};
 		plugin_host.fire_pst_started = function(pst) {
 			for (var i = 0; i < plugins.length; i++) {

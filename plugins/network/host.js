@@ -382,58 +382,62 @@ function init_data_stream(callback) {
 function start_websocket(callback) {
     // websocket
     var WebSocket = require("ws");
-    var http = m_plugin_host.get_http();
-    var server = new WebSocket.Server({ server: http });
-
-    server.on("connection", dc => {
-        class DataChannel extends EventEmitter {
-            constructor() {
-                super();
-                var self = this;
-                dc.on('message', function(data) {
-                    self.emit('data', data);
-                });
-                dc.on('error', function(event) {
-                    console.log(event);
-                });
-                dc.on('close', function(event) {
-                    self.close();
-                });
-            }
-            getMaxPayload() {
-                return dc._maxPayload;
-            }
-            send(data) {
-                if (dc.readyState == 3) {
-                    throw "already closed";
-                }
-                if (dc.readyState != 1) {
-                    console.log('something wrong : ' + dc.readyState);
-                    return;
-                }
-                if (!Array.isArray(data)) {
-                    data = [data];
-                }
-                try {
-                    for (var i = 0; i < data.length; i++) {
-                        dc.send(data[i]);
-                    }
-                } catch (e) {
-                    console.log('error on dc.send');
-                    this.close();
-                    throw e;
-                }
-            }
-            close() {
-                dc.close();
-                console.log('WebSocket closed');
-                rtp_mod.remove_conn(this);
-                this.emit('closed');
-            }
+    for(var server of [m_plugin_host.get_http(), m_plugin_host.get_https()]){
+        if(!server){
+            continue;
         }
-        var conn = new DataChannel();
-        rtp_mod.add_conn(conn);
-    });
+        var ws = new WebSocket.Server({ server });
+    
+        ws.on("connection", dc => {
+            class DataChannel extends EventEmitter {
+                constructor() {
+                    super();
+                    var self = this;
+                    dc.on('message', function(data) {
+                        self.emit('data', data);
+                    });
+                    dc.on('error', function(event) {
+                        console.log(event);
+                    });
+                    dc.on('close', function(event) {
+                        self.close();
+                    });
+                }
+                getMaxPayload() {
+                    return dc._maxPayload;
+                }
+                send(data) {
+                    if (dc.readyState == 3) {
+                        throw "already closed";
+                    }
+                    if (dc.readyState != 1) {
+                        console.log('something wrong : ' + dc.readyState);
+                        return;
+                    }
+                    if (!Array.isArray(data)) {
+                        data = [data];
+                    }
+                    try {
+                        for (var i = 0; i < data.length; i++) {
+                            dc.send(data[i]);
+                        }
+                    } catch (e) {
+                        console.log('error on dc.send');
+                        this.close();
+                        throw e;
+                    }
+                }
+                close() {
+                    dc.close();
+                    console.log('WebSocket closed');
+                    rtp_mod.remove_conn(this);
+                    this.emit('closed');
+                }
+            }
+            var conn = new DataChannel();
+            rtp_mod.add_conn(conn);
+        });
+    }
     callback(null);
 }
 function start_wrtc(callback) {
