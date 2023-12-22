@@ -241,8 +241,11 @@ function init_data_stream(callback) {
                                 var name = key.substr(0, dotpos);
                                 var param = key.substr(dotpos + 1);
                                 var value = options['stream_params'][conn.frame_info.stream_def][key];
-                                for(var key in options['params']) {
-                                    value = value.replace(new RegExp("@" + key + "@", "g"), options['params'][key]);
+                                for(var key2 in options['params']) {
+                                    if(!value){
+                                        break;
+                                    }
+                                    value = value.toString().replace(new RegExp("@" + key2 + "@", "g"), options['params'][key2]);
                                 }
                                 if(!name || !param || !value){
                                     continue;
