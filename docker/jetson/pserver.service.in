@@ -11,6 +11,8 @@ ExecStop = -/usr/bin/docker kill pserver
 ##docker container type
 #ExecStart = /usr/bin/docker start -a pserver
 
+Environment="DISPLAY=:0"
+
 Restart = always
 RestartSec = 3
 Type = simple
