@@ -254,6 +254,7 @@ async.waterfall([
 		config_json += "        \"plugins/nc_capture_st.so\",\n";
 		config_json += "        \"plugins/dup_st.so\",\n";
 		config_json += "        \"plugins/dealer_st.so\",\n";
+		config_json += "        \"plugins/suspender_st.so\",\n";
 		if(process.platform === 'darwin') {
 			config_json += "		\"plugins/vt_decoder_st.so\",\n";
 			config_json += "        \"plugins/oal_capture_st.so\",\n";
