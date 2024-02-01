@@ -25,8 +25,7 @@ echo "ADDRESS=10.42.0.$ADDRESS"
 
 MACADDRESS=$(cat /sys/class/net/wlan0/address)
 
-sudo rm /etc/NetworkManager/system-connections/picam360 2>/dev/null
-sudo rm /etc/NetworkManager/system-connections/hotspot 2>/dev/null
+sudo rm /etc/NetworkManager/system-connections/* 2>/dev/null
 
 sudo nmcli device wifi connect "$SSID" password "$PWD"
 sudo cp ifcfg-picam360 /etc/NetworkManager/system-connections/$SSID
@@ -36,3 +35,5 @@ sudo sed -i "s/%ADDRESS%/$ADDRESS/g" /etc/NetworkManager/system-connections/$SSI
 sudo sed -i "s/%MACADDRESS%/$MACADDRESS/g" /etc/NetworkManager/system-connections/$SSID
 sudo chmod 600 /etc/NetworkManager/system-connections/$SSID
 sudo nmcli connection load /etc/NetworkManager/system-connections/$SSID
+
+sudo systemctl restart NetworkManager
