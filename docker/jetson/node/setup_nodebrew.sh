@@ -1,11 +1,14 @@
 #!/bin/bash
-
-sudo apt-get -y install curl
+#
+#usage : source setup_nodebrew.sh
+#
 
 if hash nodebrew 2>/dev/null; then
     echo "nodebrew is already installed."
     exit 0
 fi
+
+sudo apt-get -y install curl
 
 curl -L git.io/nodebrew | perl - setup
 echo "export PATH=$HOME/.nodebrew/current/bin:\$PATH" >> $HOME/.bashrc
