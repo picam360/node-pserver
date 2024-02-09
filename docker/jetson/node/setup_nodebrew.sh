@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo apt-get -y curl
+
 if hash nodebrew 2>/dev/null; then
     echo "nodebrew is already installed."
     exit 0
