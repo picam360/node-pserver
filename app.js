@@ -11,6 +11,7 @@ var express = require('express');
 
 var pstcore = require('node-pstcore');
 
+var express_app = null;
 var http = null;
 var https = null;
 
@@ -36,8 +37,8 @@ var m_calibrate_hq = null;
 
 function start_webserver(callback) { // start up websocket server
     console.log("websocket server starting up");
-    var app = require('express')();
-    http = require('http').Server(app);
+    express_app = require('express')();
+    http = require('http').Server(express_app);
 
 	var https_key_filepath = 'certs/https/localhost-key.pem';
 	var https_cert_filepath = 'certs/https/localhost.pem';
@@ -55,37 +56,35 @@ function start_webserver(callback) { // start up websocket server
 		key: fs.readFileSync(https_key_filepath),
 		cert: fs.readFileSync(https_cert_filepath)
 	};
-	https = require('https').Server(https_options, app);
+	https = require('https').Server(https_options, express_app);
 
-    app
-        .get('/img/*.jpeg', function(req, res) {
-            var url = req.url.split("?")[0];
-            var query = req.url.split("?")[1];
-            var filepath = 'userdata/' + url.split("/")[2];
-            console.log(url);
-            console.log(query);
-            console.log(filepath);
-            fs
-                .readFile(filepath, function(err, data) {
-                    if (err) {
-                        res.writeHead(404);
-                        res.end();
-                        console.log("404");
-                    } else {
-                        res
-                            .writeHead(200, {
-                                'Content-Type': 'image/jpeg',
-                                'Content-Length': data.length,
-                                'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-                                'Expires': '-1',
-                                'Pragma': 'no-cache',
-                            });
-                        res.end(data);
-                        console.log("200");
-                    }
-                });
-        });
-    app.get('/img/*.mp4', function(req, res) {
+    express_app.get('/img/*.jpeg', function(req, res) {
+		var url = req.url.split("?")[0];
+		var query = req.url.split("?")[1];
+		var filepath = 'userdata/' + url.split("/")[2];
+		console.log(url);
+		console.log(query);
+		console.log(filepath);
+		fs.readFile(filepath, function(err, data) {
+			if (err) {
+				res.writeHead(404);
+				res.end();
+				console.log("404");
+			} else {
+				res
+					.writeHead(200, {
+						'Content-Type': 'image/jpeg',
+						'Content-Length': data.length,
+						'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+						'Expires': '-1',
+						'Pragma': 'no-cache',
+					});
+				res.end(data);
+				console.log("200");
+			}
+		});
+	});
+    express_app.get('/img/*.mp4', function(req, res) {
         var url = req.url.split("?")[0];
         var query = req.url.split("?")[1];
         var filepath = 'userdata/' + url.split("/")[2];
@@ -124,7 +123,7 @@ function start_webserver(callback) { // start up websocket server
             }
         });
     });
-    app.use(express.static('www')); // this need be set
+    express_app.use(express.static('www')); // this need be set
 	var http_port = 9001;
 	if(options['http_port']){
 		http_port = options['http_port'];
@@ -453,6 +452,9 @@ async.waterfall([
 		};
 		plugin_host.get_https = function() {
 			return https;
+		};
+		plugin_host.get_express_app = function() {
+			return express_app;
 		};
 		plugin_host.fire_pst_started = function(pst) {
 			for (var i = 0; i < plugins.length; i++) {
