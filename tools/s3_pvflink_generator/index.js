@@ -23,7 +23,7 @@ for (let i = options.start; i <= options.end; i++) {
   file_list.push(`${i}.pif`);
 }
 
-const urls = {};
+const links = {};
 
 const generatePresignedUrls = async () => {
   for (var file_path of file_list) {
@@ -32,11 +32,18 @@ const generatePresignedUrls = async () => {
       Key: file_path,
       Expires: 3600
     });
-    urls[file_path] = url;
+    links[file_path] = url;
   }
 
-  fs.writeFileSync('query.json', JSON.stringify(urls, null, 2));
-  console.log('Generated URLs have been saved to query.json');
+  var pvflink = {
+    format : "pvflink",
+    version : "1.0",
+    links,
+  };
+
+  var output_path = options.bucket.replaceAll('/', '_') + '.pvflink';
+  fs.writeFileSync(output_path, JSON.stringify(pvflink, null, 2));
+  console.log('Generated URLs have been saved to ' + output_path);
 };
 
 generatePresignedUrls().catch((err) => console.log(err));
