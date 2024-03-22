@@ -1,19 +1,23 @@
+//node index.js bucket_name -1 2400
+
 const AWS = require('aws-sdk');
 const fs = require('fs');
 
 var options = {};
-options.accessKeyId = process.argv[2];
-options.secretAccessKey = process.argv[3];
-options.region = process.argv[4];
-options.bucket = process.argv[5];
-options.start = process.argv[6];
-options.end = process.argv[7];
+options.bucket = process.argv[2];
+options.start = process.argv[3];
+options.end = process.argv[4];
 
-AWS.config.update({
-  accessKeyId: options.accessKeyId,
-  secretAccessKey: options.secretAccessKey,
-  region: options.region
-});
+if(process.argv.length > 7){
+  options.accessKeyId = process.argv[5];
+  options.secretAccessKey = process.argv[6];
+  options.region = process.argv[7];
+  AWS.config.update({
+    accessKeyId: options.accessKeyId,
+    secretAccessKey: options.secretAccessKey,
+    region: options.region
+  });
+}
 
 const s3 = new AWS.S3();
 
