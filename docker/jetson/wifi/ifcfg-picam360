@@ -5,7 +5,7 @@ type=wifi
 permissions=
 
 [wifi]
-mac-address=%MACADDRESS%
+#mac-address=%MACADDRESS%
 mac-address-blacklist=
 mode=infrastructure
 ssid=%SSID%
