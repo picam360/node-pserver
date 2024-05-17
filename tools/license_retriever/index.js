@@ -40,21 +40,26 @@ xhr.withCredentials = true;
 
 xhr.addEventListener("readystatechange", function() {
 	if (this.readyState === 4) {
-		var license = JSON.parse(this.responseText);
-		if (license.error) {
-			console.log(license.error, license.message);
-			return;
-		} else if (license.license_key && license.signature) {
-            if(process.platform==='win32'){
-				license["iface"] = options.device_id;
-			}else{
-				license["iface"] = options.iface;
+		try{
+			var license = JSON.parse(this.responseText);
+			if (license.error) {
+				console.log(license.error, license.message);
+				return;
+			} else if (license.license_key && license.signature) {
+				if(process.platform==='win32'){
+					license["iface"] = options.device_id;
+				}else{
+					license["iface"] = options.iface;
+				}
+				fs.writeFileSync(options.output_path, JSON.stringify(license, null,
+						'\t'));
+				console.log("succeeded!");
+			} else {
+				throw "something missing...";
 			}
-			fs.writeFileSync(options.output_path, JSON.stringify(license, null,
-					'\t'));
-			console.log("succeeded!");
-		} else {
-			console.log("something wrong : " + this.responseText);
+
+		}catch(err){
+			console.log("something wrong : " + this.responseText + ":" + err);
 			return;
 		}
 	}

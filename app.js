@@ -8,6 +8,7 @@ var fs = require("fs");
 var moment = require("moment");
 var sprintf = require('sprintf-js').sprintf;
 var express = require('express');
+var cors = require('cors');
 
 var pstcore = require('node-pstcore');
 
@@ -37,7 +38,9 @@ var m_calibrate_hq = null;
 
 function start_webserver(callback) { // start up websocket server
     console.log("websocket server starting up");
-    express_app = require('express')();
+    express_app = express();
+	express_app.use(cors());
+	express_app.use(express.json());
     http = require('http').Server(express_app);
 
 	var https_key_filepath = 'certs/https/localhost-key.pem';
