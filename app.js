@@ -1,7 +1,6 @@
 #! /usr/bin/env node
 process.chdir(__dirname);
 var os = require('os');
-var disk = require('diskusage');
 var child_process = require('child_process');
 var async = require('async');
 var fs = require("fs");

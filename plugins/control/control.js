@@ -5,6 +5,7 @@ var fs = require("fs");
 var pstcore = require('node-pstcore');
 
 var m_options = {};
+var m_base_path = "./";
 var PLUGIN_NAME = "live";
 
 var m_take_picture_id = "";
@@ -17,6 +18,9 @@ var self = {
             name: PLUGIN_NAME,
             init_options: function (options) {
                 m_options = options["control"];
+                if(m_options && m_options["base_path"]){
+                    m_base_path = m_options["base_path"] + "/";
+                }
 
                 function formatDate(date) {
                     const year = date.getFullYear();
@@ -49,7 +53,7 @@ var self = {
                             var options = req.body;
                             switch(options.name){
                             case "camera.takePicture":
-                                m_take_picture_id = m_options["base_path"] + "/" + formatDate(new Date()) + ".pvf";
+                                m_take_picture_id = m_base_path + formatDate(new Date()) + ".pvf";
                                 data = {"id":m_take_picture_id.toString()};
                                 plugin.start_stream(options.name, {
                                     "FILE_PATH" : m_take_picture_id
@@ -69,12 +73,18 @@ var self = {
                         if(req.method == 'POST'){
                             var options = req.body;
                             if(options.id == m_take_picture_id){
-                                data = {
-                                    "state" : "done",
-                                    "results" : {
-                                        "fileUrl" : m_take_picture_id
-                                    }
-                                };
+                                if (fs.existsSync(m_take_picture_id)) {
+                                    data = {
+                                        "state" : "done",
+                                        "results" : {
+                                            "fileUrl" : m_take_picture_id
+                                        }
+                                    };
+                                }else{
+                                    data = {
+                                        "state" : "processing"
+                                    };
+                                }
                             }
                         }else{
                             data = {"err":"need POST request"};
@@ -115,7 +125,10 @@ var self = {
                 return str;
             },
             start_stream : (name, params, callback) => {
-                var stream_params = m_options["stream_params"][name];
+                var stream_params = null;
+                if(m_options && m_options["stream_params"] && m_options["stream_params"][name]){
+                    stream_params = m_options["stream_params"][name];
+                }
                 if(!stream_params || !stream_params[""]){
                     return;
                 }
