@@ -1,6 +1,7 @@
 
 var async = require('async');
 var fs = require("fs");
+var rangeParser = require('range-parser');
 
 var options = {};
 var PLUGIN_NAME = "live";
@@ -25,13 +26,25 @@ var self = {
                     var url = req.url.split("?")[0];
                     var query = req.url.split("?")[1];
                     var filepath = base_path + url.substr(4);
-                    console.log(url);
-                    console.log(query);
-                    console.log(filepath);
+                    if(false){//debug
+                        console.log(url);
+                        console.log(query);
+                        console.log(filepath);
+                    }
+                    if (!fs.existsSync(filepath)) {
+                        res.status(404).send('File not found');
+                        return;
+                    }
                     var mime;
                     if(url.endsWith(".json")){
                         mime = "application/json";
                     }else if(url.endsWith(".pif")){
+                        mime = "binary/octet-stream";
+                    }else if(url.endsWith(".pvf")){
+                        mime = "binary/octet-stream";
+                    }else if(url.endsWith(".pvf2")){
+                        mime = "binary/octet-stream";
+                    }else if(url.endsWith(".psf")){
                         mime = "binary/octet-stream";
                     }else{
                         res.writeHead(403);
@@ -39,23 +52,43 @@ var self = {
                         console.log("403");
                         return;
                     }
-                    fs.readFile(filepath, function(err, data) {
-                        if (err) {
-                            res.writeHead(404);
-                            res.end();
-                            console.log("404");
-                        } else {
-                            res.writeHead(200, {
-                                'Content-Type': mime,
-                                'Content-Length': data.length,
-                                'Cache-Control': 'private, no-cache, no-store, must-revalidate',
-                                'Expires': '-1',
-                                'Pragma': 'no-cache',
-                            });
-                            res.end(data);
-                            console.log("200");
+
+                    var fileStream = null;
+                    var filesize = fs.statSync(filepath).size;
+                    if (req.headers.range) {
+                        var ranges = rangeParser(filesize, req.headers.range);
+                        if (ranges === -1 || ranges === -2 || ranges.length === 0) {
+                          res.status(416).send('Range not satisfiable');
+                          return;
                         }
-                    });
+                        var { start, end } = ranges[0];
+                        var chunkSize = (end - start) + 1;
+                        fileStream = fs.createReadStream(filepath, { start, end });
+
+                        res.writeHead(206, {
+                            'Content-Type': mime,
+                            'Content-Range': `bytes ${start}-${end}/${filesize}`,
+                            'Accept-Ranges': 'bytes',
+                            'Content-Length': chunkSize,
+                            'Access-Control-Expose-Headers': 'Content-Range, Accept-Ranges, Content-Length',
+                            'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+                            'Expires': '-1',
+                            'Pragma': 'no-cache',
+                        });
+                    }else{
+                        fileStream = fs.createReadStream(filepath);
+
+                        res.writeHead(200, {
+                            'Content-Type': mime,
+                            'Content-Length': filesize,
+                            'Access-Control-Expose-Headers': 'Content-Length',
+                            'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+                            'Expires': '-1',
+                            'Pragma': 'no-cache',
+                        });
+                    }
+
+                    fileStream.pipe(res);
                 });
             },
             pst_started: function (pstcore, pst) {

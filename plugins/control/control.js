@@ -18,8 +18,12 @@ var self = {
             name: PLUGIN_NAME,
             init_options: function (options) {
                 m_options = options["control"];
-                if(m_options && m_options["base_path"]){
-                    m_base_path = m_options["base_path"] + "/";
+
+                m_base_path = 'userdata/pvf';
+                if(options["control"] && options["control"]["base_path"]){
+                    m_base_path = options["control"]["base_path"] + "/";
+                }else if(options["http_pvf"] && options["http_pvf"]["base_path"]){
+                    m_base_path = options["http_pvf"]["base_path"] + "/";
                 }
 
                 function formatDate(date) {

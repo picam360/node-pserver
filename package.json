@@ -20,6 +20,8 @@
      "axios": "^1.4.0",
      "eventemitter3": "*",
      "express": "*",
+     "cors": "^2.8.5",
+     "range-parser": "^1.2.1",
      "i2c-bus": "*",
      "moment": "*",
      "node-gpsd": "*",
@@ -33,7 +35,6 @@
      "rimraf": "*",
      "python-shell": "*",
      "quaternion": "^1.4.2",
-     "cors": "^2.8.5",
      "node-pstcore": "1.0.6"
     }
    }
