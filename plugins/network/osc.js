@@ -1,6 +1,8 @@
 
 var async = require('async');
 var fs = require("fs");
+const { exec } = require('child_process');
+const path = require('path');
 
 var pstcore = require('node-pstcore');
 
@@ -8,7 +10,7 @@ var m_options = {};
 var m_base_path = "./";
 var PLUGIN_NAME = "live";
 
-var m_take_picture_id = "";
+var m_target_filename = "";
 
 var self = {
     create_plugin: function (plugin_host) {
@@ -39,7 +41,7 @@ var self = {
 
                 var express_app = m_plugin_host.get_express_app();
                 
-                express_app.all('/ctl/*', function(req, res) {
+                express_app.all('/ocs/*', function(req, res) {
                     var url = req.url.split("?")[0];
                     var query = req.url.split("?")[1];
                     var filename = url.substr(5);
@@ -57,11 +59,18 @@ var self = {
                             var options = req.body;
                             switch(options.name){
                             case "camera.takePicture":
-                                m_take_picture_id = m_base_path + formatDate(new Date()) + ".pvf";
-                                data = {"id":m_take_picture_id.toString()};
+                                m_target_filename = formatDate(new Date()) + ".pvf";
+                                data = {"id":m_target_filename.toString()};
                                 plugin.start_stream(options.name, {
-                                    "FILE_PATH" : m_take_picture_id
+                                    "FILE_PATH" : m_base_path + m_target_filename
                                 }, () => {
+                                    console.log("done");
+                                });
+                                break;
+                            case "pserver.generatePsf":
+                                m_target_filename = formatDate(new Date()) + ".psf";
+                                data = {"id":m_target_filename.toString()};
+                                plugin.generate_psf(m_base_path + m_target_filename, options.psf_config, () => {
                                     console.log("done");
                                 });
                                 break;
@@ -76,12 +85,12 @@ var self = {
                     case "commands/status":
                         if(req.method == 'POST'){
                             var options = req.body;
-                            if(options.id == m_take_picture_id){
-                                if (fs.existsSync(m_take_picture_id)) {
+                            if(options.id == m_target_filename){
+                                if (fs.existsSync(m_base_path + m_target_filename)) {
                                     data = {
                                         "state" : "done",
                                         "results" : {
-                                            "fileUrl" : m_take_picture_id
+                                            "fileUrl" : "pvf/" + m_target_filename
                                         }
                                     };
                                 }else{
@@ -174,6 +183,42 @@ var self = {
                         }
                     });
                     pstcore.pstcore_start_pstreamer(pst);
+                });
+            },
+            generate_psf : (filepath, config, callback) => {
+                var tmp_dir = filepath + ".tmp";
+                fs.mkdirSync(tmp_dir);
+                fs.mkdirSync(tmp_dir + "/pvf");
+                fs.writeFileSync(tmp_dir + "/config.json", JSON.stringify(config));
+
+                function copy_pvf(idx, cb){
+                    if(idx >= config.points.length){
+                        cb();
+                        return;
+                    }
+                    var src = m_base_path + path.basename(config.points[idx].path);
+                    var dst = tmp_dir + "/" + config.points[idx].path;
+                    fs.copyFile(src, dst, (err) => {
+                        if (err) {
+                            console.error('error', err);
+                        }
+                        copy_pvf(idx + 1, cb);
+                    });
+                }
+                copy_pvf(0, () => {const { spawn } = require('child_process');
+                    const cmd = `(cd ${tmp_dir} && zip -0r - ./*) > ${filepath + ".zip"}`;
+                    exec(cmd, (error, stdout, stderr) => {
+                        if (error) {
+                          console.error(`error: ${error.message}`);
+                          return;
+                        }
+
+                        console.log(`done ${cmd}`);
+                        fs.renameSync(filepath + ".zip", filepath);
+                        if(callback){
+                            callback();
+                        }
+                    });
                 });
             },
         };
