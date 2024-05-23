@@ -348,6 +348,7 @@ async.waterfall([
 		if(process.platform === 'win32') {
 		}else if(process.platform === 'darwin') {
 		}else if(process.platform === 'linux') {
+			var disk = require('diskusage');
 			var disk_free = 0;
 			setInterval(function() {
 				disk.check('/tmp', function(err, info) {

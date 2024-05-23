@@ -1,16 +1,80 @@
 
 var async = require('async');
 var fs = require("fs");
+const os = require('os');
 const { exec } = require('child_process');
 const path = require('path');
+const { SerialPort } = require('serialport');
+const { ReadlineParser } = require('@serialport/parser-readline');
 
 var pstcore = require('node-pstcore');
 
 var m_options = {};
 var m_base_path = "./";
-var PLUGIN_NAME = "live";
+var PLUGIN_NAME = "ocs";
 
 var m_target_filename = "";
+
+const networkInterfaces = os.networkInterfaces();
+
+const getIPAddress = (callback) => {
+  for (const interfaceName in networkInterfaces) {
+    const addresses = networkInterfaces[interfaceName];
+    for (const address of addresses) {
+      if (address.family === 'IPv4' && !address.internal) {
+        callback(address.address);
+        return;
+      }
+    }
+  }
+  callback('IP_NOT_FOUND');
+};
+
+const getSSID = (callback) => {
+  const platform = os.platform();
+  
+  let command;
+  if (platform === 'win32') {
+    command = 'netsh wlan show interfaces';
+  } else if (platform === 'darwin') {
+    command = '/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I';
+  } else if (platform === 'linux') {
+    command = 'nmcli -t -f active,ssid dev wifi | egrep \'^yes:\' | cut -d\\: -f2';
+  } else {
+    console.log('Unsupported platform:', platform);
+    return;
+  }
+
+  exec(command, (err, stdout, stderr) => {
+    if (err) {
+      console.error('Error executing command:', err);
+      callback('ERROR_OCURED');
+      return;
+    }
+
+    if (platform === 'win32') {
+      const match = stdout.match(/SSID\s*:\s*(.+)/);
+      if (match && match[1]) {
+        callback(match[1].trim());
+      } else {
+        callback('SSID_NOT_FOUND');
+      }
+    } else if (platform === 'darwin') {
+      const match = stdout.match(/ SSID: (.+)/);
+      if (match && match[1]) {
+        callback(match[1].trim());
+      } else {
+        callback('SSID_NOT_FOUND');
+      }
+    } else if (platform === 'linux') {
+      if (stdout) {
+        callback(stdout.trim());
+      } else {
+        callback('SSID_NOT_FOUND');
+      }
+    }
+  });
+};
 
 var self = {
     create_plugin: function (plugin_host) {
@@ -19,11 +83,15 @@ var self = {
         var plugin = {
             name: PLUGIN_NAME,
             init_options: function (options) {
-                m_options = options["control"];
+                m_options = options["osc"];
+
+                if(m_options && m_options.serial_interface){
+                    plugin.handle_serial_interface(m_options.serial_interface);
+                }
 
                 m_base_path = 'userdata/pvf';
-                if(options["control"] && options["control"]["base_path"]){
-                    m_base_path = options["control"]["base_path"] + "/";
+                if(options["osc"] && options["osc"]["base_path"]){
+                    m_base_path = options["osc"]["base_path"] + "/";
                 }else if(options["http_pvf"] && options["http_pvf"]["base_path"]){
                     m_base_path = options["http_pvf"]["base_path"] + "/";
                 }
@@ -221,6 +289,65 @@ var self = {
                     });
                 });
             },
+            handle_serial_interface : (path) => {
+
+                const port = new SerialPort({
+                    path,
+                    baudRate: 115200,
+                });
+                
+                const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+
+                function reconnect(port){
+                    if(port.timeout){
+                        return;
+                    }
+                    port.timeout = setTimeout(() => {
+                        plugin.handle_serial_interface(path);
+                    }, 5000);
+                }
+                
+                port.on('open', () => {
+                    console.log('Serial port opened');
+                });
+                port.on('close', () => {
+                    console.log('Serial port closed');
+                    reconnect(port);
+                });
+                port.on('error', (err) => {
+                    console.log('Serial port error ' + err);
+                    reconnect(port);
+                });
+                
+                parser.on('data', (data) => {
+                    if(data.startsWith("REQ ")){
+                        var params = data.trim().split(' ');
+                        switch(params[1]){
+                        case "GET_IP":
+                            getIPAddress((ip_address) => {
+                                var res = `RES GET_IP ${ip_address}\n`;
+                                port.write(res, (err) => {
+                                    if (err) {
+                                        return console.log('Error on write:', err.message, res);
+                                    }
+                                });
+                            });
+                            break;
+                        case "GET_SSID":
+                            getSSID((ssid) => {
+                                var res = `RES GET_SSID ${ssid}\n`;
+                                port.write(res, (err) => {
+                                    if (err) {
+                                        return console.log('Error on write:', err.message, res);
+                                    }
+                                });
+                            });
+                            break;
+                        }
+                    }
+                    //console.log('Received data:', data);
+                });
+            }
         };
         return plugin;
     }
