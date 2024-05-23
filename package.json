@@ -36,6 +36,7 @@
      "rimraf": "*",
      "python-shell": "*",
      "quaternion": "^1.4.2",
+     "serialport": "^12.0.0",
      "node-pstcore": "1.0.6"
     }
    }

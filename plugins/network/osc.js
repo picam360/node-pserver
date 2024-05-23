@@ -1,6 +1,6 @@
 
-var async = require('async');
-var fs = require("fs");
+const async = require('async');
+const fs = require("fs");
 const os = require('os');
 const { exec } = require('child_process');
 const path = require('path');
@@ -73,6 +73,64 @@ const getSSID = (callback) => {
         callback('SSID_NOT_FOUND');
       }
     }
+  });
+};
+
+const connectWifi = (ssid, password, callback) => {
+  const platform = os.platform();
+  let command;
+
+  if (platform === 'win32') {
+    // Windows
+    command = `netsh wlan add profile filename="wifi-profile.xml" & netsh wlan connect name="${ssid}" ssid="${ssid}" interface="Wi-Fi"`;
+    // Windows用のWiFiプロファイルXMLを作成
+    const wifiProfile = `
+      <WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">
+        <name>${ssid}</name>
+        <SSIDConfig>
+          <SSID>
+            <name>${ssid}</name>
+          </SSID>
+        </SSIDConfig>
+        <connectionType>ESS</connectionType>
+        <connectionMode>auto</connectionMode>
+        <MSM>
+          <security>
+            <authEncryption>
+              <authentication>WPA2PSK</authentication>
+              <encryption>AES</encryption>
+              <useOneX>false</useOneX>
+            </authEncryption>
+            <sharedKey>
+              <keyType>passPhrase</keyType>
+              <protected>false</protected>
+              <keyMaterial>${password}</keyMaterial>
+            </sharedKey>
+          </security>
+        </MSM>
+      </WLANProfile>
+    `;
+    require('fs').writeFileSync('wifi-profile.xml', wifiProfile);
+  } else if (platform === 'darwin') {
+    // macOS
+    command = `networksetup -setairportnetwork en0 "${ssid}" "${password}"`;
+  } else if (platform === 'linux') {
+    // Linux
+    command = `nmcli dev wifi connect "${ssid}" password "${password}"`;
+  } else {
+    console.log('Unsupported platform:', platform);
+    return;
+  }
+
+  exec(command, (err, stdout, stderr) => {
+    if (err || stderr) {
+      console.error('Error executing command:', err, stderr);
+      callback(false);
+      return;
+    }
+    console.log('Command executed successfully');
+    console.log('stdout:', stdout);
+    callback(true);
   });
 };
 
@@ -343,9 +401,19 @@ var self = {
                                 });
                             });
                             break;
+                        case "CONNECT_WIFI":
+                            connectWifi(params[2], params[3], (succeeded) => {
+                                var res = `RES CONNECT_WIFI ${succeeded ? "SUCCEEDED" : "FAILED"}\n`;
+                                port.write(res, (err) => {
+                                    if (err) {
+                                        return console.log('Error on write:', err.message, res);
+                                    }
+                                });
+                            });
+                            break;
                         }
                     }
-                    //console.log('Received data:', data);
+                    console.log('Received data:', data);
                 });
             }
         };
