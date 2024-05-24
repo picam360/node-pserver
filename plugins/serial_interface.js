@@ -116,7 +116,11 @@ const connectWifi = (ssid, password, callback) => {
     command = `networksetup -setairportnetwork en0 "${ssid}" "${password}"`;
   } else if (platform === 'linux') {
     // Linux
-    command = `nmcli dev wifi connect "${ssid}" password "${password}"`;
+    if(!password){
+      command = `nmcli connection up "${ssid}"`;
+    }else{
+      command = `nmcli dev wifi connect "${ssid}" password "${password}"`;
+    }
   } else {
     console.log('Unsupported platform:', platform);
     return;
