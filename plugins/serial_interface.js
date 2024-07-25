@@ -338,7 +338,7 @@ var self = {
                     } else if (data.startsWith("REQ ")) {
                         var params = data.trim().split(' ');
                         switch (params[1]) {
-                            case "GET_RTCM":
+                            case "GET_RTCM"://from esp32
                                 if (!m_res_rtcm_timer) {
                                     var index = -1;
                                     var chunks = chunkDataWithSequenceAndChecksum(m_rtcm_data, 64);
@@ -368,7 +368,7 @@ var self = {
                                     }, 30);
                                 }
                                 break;
-                            case "GET_IP":
+                            case "GET_IP"://from esp32
                                 getIPAddress((ip_address) => {
                                     var res = `RES GET_IP ${ip_address}\n`;
                                     port.write(res, (err) => {
@@ -378,7 +378,7 @@ var self = {
                                     });
                                 });
                                 break;
-                            case "GET_SSID":
+                            case "GET_SSID"://from esp32
                                 getSSID((ssid) => {
                                     var res = `RES GET_SSID ${ssid}\n`;
                                     port.write(res, (err) => {
@@ -388,7 +388,21 @@ var self = {
                                     });
                                 });
                                 break;
-                            case "CONNECT_WIFI":
+                            case "SET_STAT"://from esp32
+                                try {
+                                    const stat = JSON.parse(params[2]);
+                                    console.log(stat);
+                                    var res = `RES SET_STAT {}\n`;//TODO : configure
+                                    port.write(res, (err) => {
+                                        if (err) {
+                                            return console.log('Error on write:', err.message, res);
+                                        }
+                                    });
+                                } catch (err) {
+                                    console.log(err);
+                                }
+                                break;
+                            case "CONNECT_WIFI"://from ble
                                 connectWifi(params[2], params[3], (succeeded) => {
                                     var res = `RES CONNECT_WIFI ${succeeded ? "SUCCEEDED" : "FAILED"}\n`;
                                     port.write(res, (err) => {
@@ -398,7 +412,7 @@ var self = {
                                     });
                                 });
                                 break;
-                            case "GET_WIFI_NETWORKS":
+                            case "GET_WIFI_NETWORKS"://from ble
                                 getWifiNetworks((list) => {
                                     list.sort((a, b) => b.signal - a.signal);
                                     let list_str = list.map(net => net.ssid).join(' ');
