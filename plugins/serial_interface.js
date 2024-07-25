@@ -6,6 +6,7 @@ const { exec } = require('child_process');
 const path = require('path');
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
+const net = require('net');
 
 var pstcore = require('node-pstcore');
 
@@ -15,6 +16,49 @@ var PLUGIN_NAME = "ocs";
 
 var m_target_filename = "";
 
+var m_ntrip_conf = {
+  "enabled" : true,
+  "addr" : "rtk2go.com",
+  "port" : 2101,
+  "user" : "info@example.com",
+  "pswd" : "none",
+  "mtpt" : "DoshishaUniv"
+};
+
+function connect_ntrip(conf, data_callback, err_callback){
+  const auth = Buffer.from(`${conf.user}:${conf.pswd}`).toString('base64');
+
+  const ntripClient = new net.Socket();
+  ntripClient.connect(conf.port, conf.addr, () => {
+    console.log(`Connected to ${conf.addr}: ${conf.mtpt}`);
+    var ntripRequest = `GET /${onf.mtpt} HTTP/1.0\r\n` +
+      `Authorization: Basic ${auth}\r\n` +
+      `User-Agent: NTRIP YourClient/1.0\r\n` +
+      `Accept: */*\r\n` +
+      `Connection: close\r\n`;
+
+    ntripClient.write(ntripRequest);
+  });
+
+  ntripClient.on('data', (data) => {
+      if(data_callback){
+          data_callback(data);
+      }
+  });
+
+  ntripClient.on('end', () => {
+      if(err_callback){
+          err_callback("end");
+      }
+  });
+
+  ntripClient.on('error', (err) => {
+    console.error('NTRIP Client Error:', err);
+    if(err_callback){
+      err_callback(err);
+    }
+  });
+}
 
 const getIPAddress = (callback) => {
     const networkInterfaces = os.networkInterfaces();
@@ -199,6 +243,7 @@ const getWifiNetworks = (callback) => {
 var self = {
     create_plugin: function (plugin_host) {
         m_plugin_host = plugin_host;
+        m_ntrip_data = "";
         console.log("create host plugin");
         var plugin = {
             name: PLUGIN_NAME,
@@ -207,6 +252,14 @@ var self = {
 
                 if(m_options && m_options.path){
                     plugin.handle_serial_interface(m_options.path);
+                }
+
+                if(m_ntrip_conf.enabled){
+                    connect_ntrip(m_ntrip_conf, (data) => {
+                      m_ntrip_data = data;
+                    }, (err) => {
+                        console.log(err);
+                    });
                 }
             },
             pst_started: function (pstcore, pst) {
@@ -249,6 +302,14 @@ var self = {
                     if(data.startsWith("REQ ")){
                         var params = data.trim().split(' ');
                         switch(params[1]){
+                          case "GET_NTRIP_DATA":
+                              var res = `RES GET_NTRIP_DATA ${m_ntrip_data}\n`;
+                              port.write(res, (err) => {
+                                  if (err) {
+                                      return console.log('Error on write:', err.message, res);
+                                  }
+                              });
+                              break;
                         case "GET_IP":
                             getIPAddress((ip_address) => {
                                 var res = `RES GET_IP ${ip_address}\n`;
