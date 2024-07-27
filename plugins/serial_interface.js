@@ -270,6 +270,8 @@ function chunkDataWithSequenceAndChecksum(data, chunkSize) {
 var self = {
     create_plugin: function (plugin_host) {
         m_plugin_host = plugin_host;
+        m_pstcore = null;
+        m_pst = null;
         m_rtcm_data = "";
         m_res_rtcm_timer = null;
         console.log("create host plugin");
@@ -291,6 +293,12 @@ var self = {
                 }
             },
             pst_started: function (pstcore, pst) {
+				if(m_pst){
+					return;
+				}
+
+                m_pstcore = pstcore;
+				m_pst = pst;
             },
             pst_stopped: function (pstcore, pst) {
             },
@@ -391,15 +399,20 @@ var self = {
                             case "SET_STAT"://from esp32
                                 try {
                                     const stat = JSON.parse(params[2]);
-                                    console.log(stat);
+                                    //console.log(stat);
                                     var res = `RES SET_STAT {}\n`;//TODO : configure
                                     port.write(res, (err) => {
                                         if (err) {
                                             return console.log('Error on write:', err.message, res);
                                         }
                                     });
+
+                                    if(m_pst){
+				                        m_pstcore.pstcore_set_param(m_pst, "mux.vin0.pserver", "gps", params[2]);
+                                        //console.log(m_pstcore.pstcore_get_param(m_pst, "pserver", "gps"));
+                                    }
                                 } catch (err) {
-                                    console.log(err);
+                                    //console.log(err);
                                 }
                                 break;
                             case "CONNECT_WIFI"://from ble
@@ -432,7 +445,7 @@ var self = {
                     }
                     //console.log('Received data:', data);
                 });
-            }
+            },
         };
         return plugin;
     }
