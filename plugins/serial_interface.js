@@ -25,38 +25,51 @@ var m_ntrip_conf = {
     "mtpt": "DoshishaUniv"
 };
 
-function connect_ntrip(conf, data_callback, err_callback) {
-    const auth = Buffer.from(`${conf.user}:${conf.pswd}`).toString('base64');
+function connect_ntrip(conf, data_callback, close_callback) {
 
-    const ntripClient = new net.Socket();
-    ntripClient.connect(conf.port, conf.addr, () => {
-        console.log(`Connected to ${conf.addr}: ${conf.mtpt}`);
-        var ntripRequest = `GET /${conf.mtpt} HTTP/1.0\r\n` +
-            `Authorization: Basic ${auth}\r\n` +
-            `User-Agent: NTRIP YourClient/1.0\r\n` +
-            `Accept: */*\r\n` +
-            `Connection: close\r\n`;
+    const client = new net.Socket();
 
-        ntripClient.write(ntripRequest);
-    });
-
-    ntripClient.on('data', (data) => {
+    client.on('data', (data) => {
+        //console.log('ntrip server data', data.toString('utf-8'));
         if (data_callback) {
             data_callback(data);
         }
     });
 
-    ntripClient.on('end', () => {
-        if (err_callback) {
-            err_callback("end");
+    client.on('end', () => {
+        console.log('ntrip server ended');
+    });
+
+    client.on('close', () => {
+        console.log('ntrip server closed');
+        if (close_callback) {
+            close_callback();
         }
     });
 
-    ntripClient.on('error', (err) => {
-        console.error('NTRIP Client Error:', err);
-        if (err_callback) {
-            err_callback(err);
-        }
+    client.on('timeout', () => {
+      console.error('ntrip server closed timeout');
+      client.destroy();
+    });
+
+    client.on('error', (err) => {
+        console.error('ntrip server error:', err);
+        client.destroy();
+    });
+
+    client.connect(conf.port, conf.addr, () => {
+        client.setTimeout(10000);
+
+        console.log(`Connected to ${conf.addr}: ${conf.mtpt}`);
+
+        const auth = Buffer.from(`${conf.user}:${conf.pswd}`).toString('base64');
+        var req = `GET /${conf.mtpt} HTTP/1.0\r\n` +
+            `Authorization: Basic ${auth}\r\n` +
+            `User-Agent: NTRIP YourClient/1.0\r\n` +
+            `Accept: */*\r\n` +
+            `Connection: close\r\n`;
+
+        client.write(req);
     });
 }
 
@@ -285,11 +298,7 @@ var self = {
                 }
 
                 if (m_ntrip_conf.enabled) {
-                    connect_ntrip(m_ntrip_conf, (data) => {
-                        m_rtcm_data = data;
-                    }, (err) => {
-                        console.log(err);
-                    });
+                    plugin.handle_ntrip();
                 }
             },
             pst_started: function (pstcore, pst) {
@@ -303,6 +312,19 @@ var self = {
             pst_stopped: function (pstcore, pst) {
             },
             command_handler: function (cmd, conn) {
+            },
+            handle_ntrip: () => {
+                connect_ntrip(m_ntrip_conf, (data) => {
+                    m_rtcm_data = data;
+                }, () => {
+                    if(m_ntrip_conf.timeout){
+                       clearTimeout(m_ntrip_conf.timeout); 
+                    }
+                    m_ntrip_conf.timeout = setTimeout(() => {
+                        plugin.handle_ntrip();
+                        m_ntrip_conf.timeout = 0;
+                    }, 5000);
+                });
             },
             handle_serial_interface: (path) => {
 
@@ -336,7 +358,7 @@ var self = {
 
                 parser.on('data', (data) => {
                     if (data.startsWith("ECH ")) {
-                        //console.log(data);
+                        console.log(data);
                     } else if (data.startsWith("DBG ")) {
                         //console.log(data);
                     } else if (data.startsWith("INF ")) {
