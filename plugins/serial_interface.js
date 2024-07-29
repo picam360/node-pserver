@@ -424,7 +424,7 @@ var self = {
                                     if(m_plugin_host.get_redis_client){
                                         const client = m_plugin_host.get_redis_client();
                                         if(client){
-                                            client.publish('pserver.gps', params[2], (err, reply) => {
+                                            client.publish('pserver-gps', params[2], (err, reply) => {
                                                 if (err) {
                                                     console.error('Error publishing message:', err);
                                                 } else {
