@@ -16,7 +16,7 @@
     "stream_params" : {
         "default" : {
             "dealer.def" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper ho=1 edge_r=\"0.1\" s=@APP.SIZE@ n_vstreams=1",
-#            "dealer.def" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper maptype=WINDOW fov=90 ignore_view_quat=1 edge_r=\"0.1\" s=@APP.SIZE@ n_vstreams=1",
+#            "dealer.def" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper maptype=WINDOW fov=90 ignore_view_params=1 s=@APP.SIZE@ n_vstreams=1",
             "renderer.realtime" : "1",
             "mux.vin0" : "v4l2_capture name=capture s=@APP.CAM0@",
             "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens-params0.json\" gps=\"@GET_PARAM('pserver.gps')@\"/>",
