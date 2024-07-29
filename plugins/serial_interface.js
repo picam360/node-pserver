@@ -283,8 +283,6 @@ function chunkDataWithSequenceAndChecksum(data, chunkSize) {
 var self = {
     create_plugin: function (plugin_host) {
         m_plugin_host = plugin_host;
-        m_pstcore = null;
-        m_pst = null;
         m_rtcm_data = "";
         m_res_rtcm_timer = null;
         console.log("create host plugin");
@@ -302,12 +300,6 @@ var self = {
                 }
             },
             pst_started: function (pstcore, pst) {
-				if(m_pst){
-					return;
-				}
-
-                m_pstcore = pstcore;
-				m_pst = pst;
             },
             pst_stopped: function (pstcore, pst) {
             },
@@ -429,9 +421,17 @@ var self = {
                                         }
                                     });
 
-                                    if(m_pst){
-				                        m_pstcore.pstcore_set_param(m_pst, "mux.vin0.pserver", "gps", params[2]);
-                                        //console.log(m_pstcore.pstcore_get_param(m_pst, "pserver", "gps"));
+                                    if(m_plugin_host.get_redis_client){
+                                        const client = m_plugin_host.get_redis_client();
+                                        if(client){
+                                            client.publish('pserver.gps', params[2], (err, reply) => {
+                                                if (err) {
+                                                    console.error('Error publishing message:', err);
+                                                } else {
+                                                    console.log(`Message published to ${reply} subscribers.`);
+                                                }
+                                            });
+                                        }
                                     }
                                 } catch (err) {
                                     //console.log(err);
