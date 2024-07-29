@@ -6,6 +6,7 @@
     "stream_def" : "default",
     "stream_defs" : {
         "default" : "dealer ! v4l2_tegra_encoder name=encoder fps=15",
+#        "default" : "dealer ! mjpeg_encoder ! recorder path=/home/picam360/rec_@FIRST_STORED_TIME@/@TIME_STAMP@.jpeg ! mjpeg_decoder ! v4l2_tegra_encoder name=encoder fps=15",
         "calib" : "mux name=mux ! pgl_calibrator name=calibrator w=1024 h=1024 d=0 ! v4l2_tegra_encoder name=encoder fps=15"
     },
     "plugin_paths" : [
@@ -15,6 +16,7 @@
     "stream_params" : {
         "default" : {
             "dealer.def" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper ho=1 edge_r=\"0.1\" s=@APP.SIZE@ n_vstreams=1",
+#            "dealer.def" : "mux name=mux ! mjpeg_tegra_decoder name=decoder cudamem=1 ! pcuda_remapper name=remapper maptype=WINDOW fov=90 ignore_view_quat=1 edge_r=\"0.1\" s=@APP.SIZE@ n_vstreams=1",
             "renderer.realtime" : "1",
             "mux.vin0" : "v4l2_capture name=capture s=@APP.CAM0@",
             "mux.vin0.capture.meta" : "<meta maptype=\"FISH\" deg_offset=\"-90,0,0\" lens_params=\"file:///etc/pserver/lens-params0.json\" gps=\"@GET_PARAM('pserver.gps')@\"/>",
