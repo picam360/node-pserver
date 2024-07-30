@@ -11,12 +11,16 @@ var self = {
             init_options: function (options) {
                 m_options = options["serial_interface"];
 
-                m_redis_client = redis.createClient({
-                    host: '127.0.0.1',
-                    port: 6379
+                const client = redis.createClient({
+                    host: 'localhost',
+                    port: 6379,
                 });
-                m_redis_client.on('error', (err) => {
-                    console.error('Error:', err);
+                client.on('connect', () => {
+                    console.log('redis connected:');
+                    m_redis_client = client;
+                });
+                client.on('error', (err) => {
+                    console.error('redis error:', err);
                     m_redis_client = null;
                 });
 

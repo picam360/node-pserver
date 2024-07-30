@@ -361,34 +361,6 @@ var self = {
                         var params = data.trim().split(' ');
                         switch (params[1]) {
                             case "GET_RTCM"://from esp32
-                                if (!m_res_rtcm_timer) {
-                                    var index = -1;
-                                    var chunks = chunkDataWithSequenceAndChecksum(m_rtcm_data, 64);
-                                    m_res_rtcm_timer = setInterval(() => {
-                                        var res = `RES GET_RTCM \n`;
-                                        if (index < 0) {
-                                            res = `RES GET_RTCM start\n`;
-                                            index = 0;
-                                        } else if (index >= chunks.length) {
-                                            res = `RES GET_RTCM end\n`;
-                                            clearInterval(m_res_rtcm_timer);
-                                            m_res_rtcm_timer = null;
-                                            m_rtcm_data = "";
-                                        } else {
-                                            var chunk = chunks[index];
-                                            if (chunk) {
-                                                var base64str = Buffer.from(chunk).toString('base64');
-                                                res = `RES GET_RTCM ${base64str}\n`;
-                                            }
-                                            index++;
-                                        }
-                                        port.write(res, (err) => {
-                                            if (err) {
-                                                return console.log('Error on write:', err.message, res);
-                                            }
-                                        });
-                                    }, 30);
-                                }
                                 break;
                             case "GET_IP"://from esp32
                                 getIPAddress((ip_address) => {
@@ -420,6 +392,34 @@ var self = {
                                             return console.log('Error on write:', err.message, res);
                                         }
                                     });
+                                    if (!m_res_rtcm_timer) {
+                                        var index = -1;
+                                        var chunks = chunkDataWithSequenceAndChecksum(m_rtcm_data, 64);
+                                        m_res_rtcm_timer = setInterval(() => {
+                                            var res = `RES GET_RTCM \n`;
+                                            if (index < 0) {
+                                                res = `RES GET_RTCM start\n`;
+                                                index = 0;
+                                            } else if (index >= chunks.length) {
+                                                res = `RES GET_RTCM end\n`;
+                                                clearInterval(m_res_rtcm_timer);
+                                                m_res_rtcm_timer = null;
+                                                m_rtcm_data = "";
+                                            } else {
+                                                var chunk = chunks[index];
+                                                if (chunk) {
+                                                    var base64str = Buffer.from(chunk).toString('base64');
+                                                    res = `RES GET_RTCM ${base64str}\n`;
+                                                }
+                                                index++;
+                                            }
+                                            port.write(res, (err) => {
+                                                if (err) {
+                                                    return console.log('Error on write:', err.message, res);
+                                                }
+                                            });
+                                        }, 30);
+                                    }
 
                                     if(m_plugin_host.get_redis_client){
                                         const client = m_plugin_host.get_redis_client();
