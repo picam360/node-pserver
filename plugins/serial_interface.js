@@ -284,6 +284,7 @@ var self = {
     create_plugin: function (plugin_host) {
         m_plugin_host = plugin_host;
         m_rtcm_data = "";
+        m_msg_queue = [];
         m_res_rtcm_timer = null;
         console.log("create host plugin");
         var plugin = {
@@ -307,7 +308,13 @@ var self = {
             },
             handle_ntrip: () => {
                 connect_ntrip(m_ntrip_conf, (data) => {
-                    m_rtcm_data = data;
+                    var chunks = chunkDataWithSequenceAndChecksum(data, 64);
+                    m_msg_queue.push("RES GET_RTCM start\n");
+                    for(const chunk of chunks){
+                        var base64str = Buffer.from(chunk).toString('base64');
+                        m_msg_queue.push(`RES GET_RTCM ${base64str}\n`);
+                    }
+                    m_msg_queue.push("RES GET_RTCM end\n");
                 }, () => {
                     if(m_ntrip_conf.timeout){
                        clearTimeout(m_ntrip_conf.timeout); 
@@ -348,15 +355,24 @@ var self = {
                     reconnect(port);
                 });
 
+                setInterval(() => {
+                    for(const msg of m_msg_queue){
+                        port.write(msg, (err) => {
+                            if (err) {
+                                return console.log('Error on write:', err.message, res);
+                            }
+                        });
+                    }
+                    m_msg_queue = [];
+                }, 30);
+
                 parser.on('data', (data) => {
                     if (data.startsWith("ECH ")) {
-                        console.log(data);
+                        //console.log(data);
                     } else if (data.startsWith("DBG ")) {
-                        console.log(data);
+                        //console.log(data);
                     } else if (data.startsWith("INF ")) {
                         //console.log(data);
-                    } else if (data.startsWith("MSG ")) {
-                        console.log(data);
                     } else if (data.startsWith("ERR ")) {
                         console.log(data);
                     } else if (data.startsWith("REQ ")) {
@@ -366,62 +382,19 @@ var self = {
                                 break;
                             case "GET_IP"://from esp32
                                 getIPAddress((ip_address) => {
-                                    var res = `RES GET_IP ${ip_address}\n`;
-                                    port.write(res, (err) => {
-                                        if (err) {
-                                            return console.log('Error on write:', err.message, res);
-                                        }
-                                    });
+                                    m_msg_queue.push(`RES GET_IP ${ip_address}\n`);
                                 });
                                 break;
                             case "GET_SSID"://from esp32
                                 getSSID((ssid) => {
-                                    var res = `RES GET_SSID ${ssid}\n`;
-                                    port.write(res, (err) => {
-                                        if (err) {
-                                            return console.log('Error on write:', err.message, res);
-                                        }
-                                    });
+                                    m_msg_queue.push(`RES GET_SSID ${ssid}\n`);
                                 });
                                 break;
                             case "SET_STAT"://from esp32
                                 try {
                                     const stat = JSON.parse(params[2]);
                                     //console.log(stat);
-                                    var res = `RES SET_STAT {}\n`;//TODO : configure
-                                    port.write(res, (err) => {
-                                        if (err) {
-                                            return console.log('Error on write:', err.message, res);
-                                        }
-                                    });
-                                    if (!m_res_rtcm_timer && m_rtcm_data) {
-                                        var index = -1;
-                                        var chunks = chunkDataWithSequenceAndChecksum(m_rtcm_data, 64);
-                                        m_res_rtcm_timer = setInterval(() => {
-                                            var res = `RES GET_RTCM \n`;
-                                            if (index < 0) {
-                                                res = `RES GET_RTCM start\n`;
-                                                index = 0;
-                                            } else if (index >= chunks.length) {
-                                                res = `RES GET_RTCM end\n`;
-                                                clearInterval(m_res_rtcm_timer);
-                                                m_res_rtcm_timer = null;
-                                                m_rtcm_data = "";
-                                            } else {
-                                                var chunk = chunks[index];
-                                                if (chunk) {
-                                                    var base64str = Buffer.from(chunk).toString('base64');
-                                                    res = `RES GET_RTCM ${base64str}\n`;
-                                                }
-                                                index++;
-                                            }
-                                            port.write(res, (err) => {
-                                                if (err) {
-                                                    return console.log('Error on write:', err.message, res);
-                                                }
-                                            });
-                                        }, 30);
-                                    }
+                                    m_msg_queue.push(`RES SET_STAT {}\n`);//TODO : configure
 
                                     if(m_plugin_host.get_redis_client){
                                         const client = m_plugin_host.get_redis_client();
