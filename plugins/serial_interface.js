@@ -352,7 +352,7 @@ var self = {
                     if (data.startsWith("ECH ")) {
                         console.log(data);
                     } else if (data.startsWith("DBG ")) {
-                        //console.log(data);
+                        console.log(data);
                     } else if (data.startsWith("INF ")) {
                         //console.log(data);
                     } else if (data.startsWith("MSG ")) {
@@ -394,7 +394,7 @@ var self = {
                                             return console.log('Error on write:', err.message, res);
                                         }
                                     });
-                                    if (!m_res_rtcm_timer) {
+                                    if (!m_res_rtcm_timer && m_rtcm_data) {
                                         var index = -1;
                                         var chunks = chunkDataWithSequenceAndChecksum(m_rtcm_data, 64);
                                         m_res_rtcm_timer = setInterval(() => {
