@@ -11,18 +11,19 @@ const net = require('net');
 var pstcore = require('node-pstcore');
 
 var m_options = {};
-var m_base_path = "./";
-var PLUGIN_NAME = "ocs";
-
-var m_target_filename = "";
+var PLUGIN_NAME = "serial_interface";
 
 var m_ntrip_conf = {
     "enabled": true,
-    "addr": "rtk2go.com",
+    "host": "rtk2go.com",
     "port": 2101,
-    "user": "info@example.com",
-    "pswd": "none",
-    "mtpt": "DoshishaUniv"
+    "username": "info@example.com",
+    "password": "none",
+    "mountpoint": "DoshishaUniv",
+//    "mountpoint": "OCU_okujo",
+//    "mountpoint": "MIE_UNIV",
+//    "mountpoint": "NEAR-JPNs",
+//    "mountpoint": "geosense_f9p_rtcm",
 };
 
 function connect_ntrip(conf, data_callback, close_callback) {
@@ -57,13 +58,13 @@ function connect_ntrip(conf, data_callback, close_callback) {
         client.destroy();
     });
 
-    client.connect(conf.port, conf.addr, () => {
+    client.connect(conf.port, conf.host, () => {
         client.setTimeout(10000);
 
-        console.log(`Connected to ${conf.addr}: ${conf.mtpt}`);
+        console.log(`Connected to ${conf.host}: ${conf.mountpoint}`);
 
-        const auth = Buffer.from(`${conf.user}:${conf.pswd}`).toString('base64');
-        var req = `GET /${conf.mtpt} HTTP/1.0\r\n` +
+        const auth = Buffer.from(`${conf.username}:${conf.password}`).toString('base64');
+        var req = `GET /${conf.mountpoint} HTTP/1.0\r\n` +
             `Authorization: Basic ${auth}\r\n` +
             `User-Agent: NTRIP YourClient/1.0\r\n` +
             `Accept: */*\r\n` +
@@ -285,7 +286,8 @@ var self = {
         m_plugin_host = plugin_host;
         m_rtcm_data = "";
         m_msg_queue = [];
-        m_res_rtcm_timer = null;
+        m_last_rtcm_time_ms = 0;
+        m_last_stat = {};
         console.log("create host plugin");
         var plugin = {
             name: PLUGIN_NAME,
@@ -307,14 +309,55 @@ var self = {
             command_handler: function (cmd, conn) {
             },
             handle_ntrip: () => {
+                // const { NtripClient } = require('ntrip-client');
+
+                // const client = new NtripClient(m_ntrip_conf);
+
+                // client.on('data', (data) => {
+                //     if(data[0] != 211){//0xD3
+                //         console.log("rtcm need to start preamble", data.toString('utf-8'));
+                //         return;
+                //     }
+                //     //console.log(data);
+                //     var chunks = chunkDataWithSequenceAndChecksum(data, 256);
+                //     m_msg_queue.push("RES GET_RTCM start\n");
+                //     for(const chunk of chunks){
+                //         var base64str = Buffer.from(chunk).toString('base64');
+                //         m_msg_queue.push(`RES GET_RTCM ${base64str}\n`);
+                //     }
+                //     m_msg_queue.push("RES GET_RTCM end\n");
+                // });
+                
+                // client.on('close', () => {
+                //     console.log("ntrip-clientt closed");
+                // });
+                
+                // client.on('error', (err) => {
+                //     console.log("ntrip-clientt error", err);
+                // });
+                
+                // client.run();
+
                 connect_ntrip(m_ntrip_conf, (data) => {
-                    var chunks = chunkDataWithSequenceAndChecksum(data, 64);
-                    m_msg_queue.push("RES GET_RTCM start\n");
-                    for(const chunk of chunks){
-                        var base64str = Buffer.from(chunk).toString('base64');
-                        m_msg_queue.push(`RES GET_RTCM ${base64str}\n`);
-                    }
-                    m_msg_queue.push("RES GET_RTCM end\n");
+                    //if(data[0] != 211){//0xD3
+                    //    console.log("rtcm need to start preamble", data.slice(0, 128).toString('utf-8'));
+                    //    return;
+                    //}
+
+                    //const now_ms = new Date();
+                    //if(now_ms - m_last_rtcm_time_ms > 1000){
+                    //    m_last_rtcm_time_ms = now_ms;
+
+                        var chunks = chunkDataWithSequenceAndChecksum(data, 64);
+                        m_msg_queue.push("RES GET_RTCM start\n");
+                        for(const chunk of chunks){
+                            var base64str = Buffer.from(chunk).toString('base64');
+                            m_msg_queue.push(`RES GET_RTCM ${base64str}\n`);
+                        }
+                        m_msg_queue.push("RES GET_RTCM end\n");
+                    //}else{
+                    //    console.log("skip rtcm data", data.length);
+                    //}
                 }, () => {
                     if(m_ntrip_conf.timeout){
                        clearTimeout(m_ntrip_conf.timeout); 
@@ -360,7 +403,7 @@ var self = {
                     for(var i in m_msg_queue){
                         const msg = m_msg_queue[i];
                         size += msg.length;
-                        if(size > 1024){//limit bytes of once
+                        if(size > 512){//limit bytes of once
                             m_msg_queue = m_msg_queue.slice(i);
                             return;
                         }
@@ -371,13 +414,13 @@ var self = {
                         });
                     }
                     m_msg_queue = [];
-                }, 30);
+                }, 50);
 
                 parser.on('data', (data) => {
                     if (data.startsWith("ECH ")) {
                         //console.log(data);
                     } else if (data.startsWith("DBG ")) {
-                        //console.log(data);
+                        console.log(data);
                     } else if (data.startsWith("INF ")) {
                         //console.log(data);
                     } else if (data.startsWith("ERR ")) {
@@ -402,6 +445,11 @@ var self = {
                                     const stat = JSON.parse(params[2]);
                                     //console.log(stat);
                                     m_msg_queue.push(`RES SET_STAT {}\n`);//TODO : configure
+
+                                    if(m_last_stat.FIX != stat.FIX){
+                                        console.log("FIX changed", m_last_stat.FIX, stat.FIX);
+                                    }
+                                    m_last_stat = stat;
 
                                     if(m_plugin_host.get_redis_client){
                                         const client = m_plugin_host.get_redis_client();
