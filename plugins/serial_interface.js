@@ -356,7 +356,14 @@ var self = {
                 });
 
                 setInterval(() => {
-                    for(const msg of m_msg_queue){
+                    var size = 0;
+                    for(var i in m_msg_queue){
+                        const msg = m_msg_queue[i];
+                        size += msg.length;
+                        if(size > 1024){//limit bytes of once
+                            m_msg_queue = m_msg_queue.slice(i);
+                            return;
+                        }
                         port.write(msg, (err) => {
                             if (err) {
                                 return console.log('Error on write:', err.message, res);
