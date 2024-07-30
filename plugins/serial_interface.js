@@ -355,7 +355,9 @@ var self = {
                         //console.log(data);
                     } else if (data.startsWith("INF ")) {
                         //console.log(data);
-                    } else if (data.startsWith("INF ")) {
+                    } else if (data.startsWith("MSG ")) {
+                        console.log(data);
+                    } else if (data.startsWith("ERR ")) {
                         console.log(data);
                     } else if (data.startsWith("REQ ")) {
                         var params = data.trim().split(' ');
@@ -428,7 +430,7 @@ var self = {
                                                 if (err) {
                                                     console.error('Error publishing message:', err);
                                                 } else {
-                                                    console.log(`Message published to ${reply} subscribers.`);
+                                                    //console.log(`Message published to ${reply} subscribers.`);
                                                 }
                                             });
                                         }
@@ -464,8 +466,9 @@ var self = {
                                 });
                                 break;
                         }
+                    }else{
+                        console.log('Received data:', data);
                     }
-                    //console.log('Received data:', data);
                 });
             },
         };
