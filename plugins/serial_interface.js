@@ -287,7 +287,7 @@ var self = {
         m_rtcm_data = "";
         m_msg_queue = [];
         m_last_rtcm_time_ms = 0;
-        m_last_stat = {};
+        m_last_nmea = [];
         console.log("create host plugin");
         var plugin = {
             name: PLUGIN_NAME,
@@ -440,21 +440,24 @@ var self = {
                                     m_msg_queue.push(`RES GET_SSID ${ssid}\n`);
                                 });
                                 break;
-                            case "SET_STAT"://from esp32
+                            case "SET_NMEA"://from esp32
                                 try {
-                                    const stat = JSON.parse(params[2]);
                                     //console.log(stat);
-                                    m_msg_queue.push(`RES SET_STAT {}\n`);//TODO : configure
-
-                                    if(m_last_stat.FIX != stat.FIX){
-                                        console.log("FIX changed", m_last_stat.FIX, stat.FIX);
+                                    m_msg_queue.push(`RES SET_NMEA\n`);
+                                    if(!params[2]){
+                                        return;
                                     }
-                                    m_last_stat = stat;
+                                    const nmea = params[2].split(',');
+
+                                    if(m_last_nmea[6] != nmea[6]){
+                                        console.log("FIX changed", m_last_nmea[6], nmea[6]);
+                                    }
+                                    m_last_nmea = nmea;
 
                                     if(m_plugin_host.get_redis_client){
                                         const client = m_plugin_host.get_redis_client();
                                         if(client){
-                                            client.publish('pserver-gps', params[2], (err, reply) => {
+                                            client.publish('pserver-nmea', params[2], (err, reply) => {
                                                 if (err) {
                                                     console.error('Error publishing message:', err);
                                                 } else {
