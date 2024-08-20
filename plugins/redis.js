@@ -9,19 +9,19 @@ var self = {
         var plugin = {
             name: PLUGIN_NAME,
             init_options: function (options) {
-                m_options = options["serial_interface"];
+                m_options = options["redis"];
 
                 const client = redis.createClient({
                     host: 'localhost',
                     port: 6379,
                 });
-                client.on('connect', () => {
-                    console.log('redis connected:');
-                    m_redis_client = client;
-                });
                 client.on('error', (err) => {
                     console.error('redis error:', err);
                     m_redis_client = null;
+                });
+                client.connect().then(() => {
+                    console.log('redis connected:');
+                    m_redis_client = client;
                 });
 
                 m_plugin_host.get_redis_client = () => {
