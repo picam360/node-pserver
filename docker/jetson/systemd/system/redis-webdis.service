@@ -1,0 +1,15 @@
+##regist service
+
+[Unit]
+Description = redis-webdis daemon
+
+[Service]
+ExecStart = /usr/bin/docker run --name redis-webdis --rm -p 7379:7379 -p 6379:6379 -v /etc/webdis.prod.json:/etc/webdis.prod.json nicolas/webdis:0.1.22
+ExecStop = -/usr/bin/docker kill redis-webdis
+
+Restart = always
+RestartSec = 3
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
