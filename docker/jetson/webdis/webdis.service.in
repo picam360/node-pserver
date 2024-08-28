@@ -1,0 +1,15 @@
+##regist service
+
+[Unit]
+Description = webdis daemon
+
+[Service]
+ExecStart = /usr/local/bin/webdis @CONFIG_PATH@
+#ExecStop = 
+
+Restart = always
+RestartSec = 3
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
