@@ -1,0 +1,15 @@
+##regist service
+
+[Unit]
+Description = tileserver-gl daemon
+
+[Service]
+ExecStart = docker run
+ExecStop = -/usr/bin/docker kill tileserver-gl
+
+Restart = always
+RestartSec = 3
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
