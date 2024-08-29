@@ -4,7 +4,7 @@
 Description = tileserver-gl daemon
 
 [Service]
-ExecStart = docker run
+ExecStart = /usr/bin/docker run --name tileserver-gl --rm -p 9111:8080 -v @DATA_PATH@:/data maptiler/tileserver-gl:v4.13.0
 ExecStop = -/usr/bin/docker kill tileserver-gl
 
 Restart = always
