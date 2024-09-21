@@ -30,8 +30,8 @@ RUN echo "export PATH=$HOME/.nodebrew/current/bin:\$PATH" >> $HOME/.bashrc
 ENV HOME /root
 ENV PATH $HOME/.nodebrew/current/bin:$PATH
 RUN sed -i -z "s/} elsif (\$machine =~ m\/aarch64\/) {\n        \$arch = 'armv7l';/} elsif (\$machine =~ m\/aarch64\/) {\n        \$arch = 'arm64'/g" $HOME/.nodebrew/nodebrew
-RUN nodebrew install v16.20.2 && \
-    nodebrew use v16.20.2
+RUN nodebrew install v14.17.1 && \
+    nodebrew use v14.17.1
 ENV L4T_VERSION ${L4T_VERSION}
 RUN npm config set unsafe-perm true && \
     npm -g install node-pserver@${PSERVER_VERSION}

@@ -12,5 +12,5 @@ else
     echo "export PATH=$HOME/.nodebrew/current/bin:\$PATH" >> $HOME/.bashrc
     export PATH=$HOME/.nodebrew/current/bin:$PATH
     sed -i -z "s/} elsif (\$machine =~ m\/aarch64\/) {\n        \$arch = 'armv7l';/} elsif (\$machine =~ m\/aarch64\/) {\n        \$arch = 'arm64'/g" $HOME/.nodebrew/nodebrew
-    nodebrew install v16.20.2 && nodebrew use v16.20.2
+    nodebrew install v14.17.1 && nodebrew use v14.17.1
 fi
