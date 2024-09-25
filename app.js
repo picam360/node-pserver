@@ -367,6 +367,24 @@ async.waterfall([
 				}
 			}, 100);
 		}
+		
+		//check memory usage
+		if(options["memory_usage_limit"]){
+			setInterval(() => {
+				const totalMem = os.totalmem();
+				const freeMem = os.freemem();
+				const usedMem = totalMem - freeMem;
+				const usedMemPercentage = (usedMem / totalMem) * 100;
+			
+				console.log(`Memory Usage: ${usedMem} / ${totalMem} B ${usedMemPercentage.toFixed(2)}%`);
+			
+				const memory_usage_limit = (options["memory_usage_limit"] || 95);
+				if (usedMemPercentage > memory_usage_limit) {
+					console.log(`Memory usage exceeds ${memory_usage_limit}%. Killing the process...`);
+					process.exit(1); // Exit the process with an error code
+				}
+			}, 10000);
+		}
 		callback(null);
 	},
 	function(callback) {
