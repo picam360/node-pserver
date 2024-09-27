@@ -5,7 +5,6 @@
      "pserver": "app.js"
     },
     "scripts": {
-     "preinstall": "node update-dependencies.js",
      "install": "node setup.js"
     },
     "author": "Takuma Hirayama <hirayama.takuma@picam360.com>",

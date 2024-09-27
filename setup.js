@@ -25,3 +25,17 @@ try{
 }catch(err){
 	console.log("copy files:" + err);
 }
+
+if (process.env.NODE_PSTCORE_VERSION) {
+	fs.rmSync('node_modules/node-pstcore', {recursive:true, force:true});
+	if(process.env.NODE_PSTCORE_VERSION.startsWith("https")){
+		execSync(`git clone --depth 1 ${process.env.NODE_PSTCORE_VERSION} node-pstcore`, {cwd : `${__dirname}/node_modules`});
+		execSync(`npm install`, {cwd : `${__dirname}/node_modules/node-pstcore`});
+	}else{
+		execSync(`npm install node-pstcore@${process.env.NODE_PSTCORE_VERSION}`);
+	}
+	
+    console.log(`Updated node-pstcore version to ${process.env.NODE_PSTCORE_VERSION}`);
+}else{
+	console.log(`Use node-pstcore original version in package.json`);
+}
