@@ -14,12 +14,14 @@ else
 
     if [ "${PSERVER_VERSION}" = "github" ]; then
         NODE_PSERVER_VERSION=https://github.com/picam360/node-pserver.git
+    elif [[ "$PSERVER_VERSION" == github.com* ]]; then
+        NODE_PSERVER_VERSION=https://${PSERVER_VERSION}
     else
         NODE_PSERVER_VERSION=node-pserver@${PSERVER_VERSION}
     fi
     echo "use NODE_PSERVER_VERSION=${NODE_PSERVER_VERSION}"
 
-    sudo docker build -t pserver:${PSERVER_VERSION} --build-arg NODE_PSERVER_VERSION=${NODE_PSERVER_VERSION} --build-arg NODE_PSTCORE_VERSION=${NODE_PSTCORE_VERSION} --build-arg L4T_VERSION=${L4T_VERSION} -f Dockerfile.jetson .
+    sudo docker build -t pserver:${PSERVER_VERSION} --build-arg NODE_PSERVER_VERSION="${NODE_PSERVER_VERSION}" --build-arg NODE_PSTCORE_VERSION="${NODE_PSTCORE_VERSION}" --build-arg L4T_VERSION="${L4T_VERSION}" -f Dockerfile.jetson .
 fi
 sed -e "s/@PSERVER_VERSION@/${PSERVER_VERSION}/g" pserver.image.in | sudo tee /usr/bin/pserver
 sudo chmod +x /usr/bin/pserver

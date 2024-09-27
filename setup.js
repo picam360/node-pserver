@@ -28,18 +28,25 @@ try{
 }
 
 if (process.env.NODE_PSTCORE_VERSION) {
+	let node_pstcore_version = process.env.NODE_PSTCORE_VERSION;
+	if(node_pstcore_version == "github"){
+		node_pstcore_version = "https://github.com/picam360/node-pstcore.git";
+	}
+	if(node_pstcore_version.startsWith("github.com")){
+		node_pstcore_version = `https://${node_pstcore_version}`;
+	}
 	const node_pstcore_path = path.dirname(require.resolve('node-pstcore'));
 	console.log(node_pstcore_path, path.dirname(node_pstcore_path));
 
 	fs.rmSync(node_pstcore_path, {recursive:true, force:true});
-	if(process.env.NODE_PSTCORE_VERSION.startsWith("https")){
-		execSync(`git clone --depth 1 ${process.env.NODE_PSTCORE_VERSION} node-pstcore`, {cwd : path.dirname(node_pstcore_path)});
+	if(node_pstcore_version.startsWith("https")){
+		execSync(`git clone --depth 1 ${node_pstcore_version} node-pstcore`, {cwd : path.dirname(node_pstcore_path)});
 		execSync(`npm install`, {cwd : node_pstcore_path});
 	}else{
-		execSync(`npm install node-pstcore@${process.env.NODE_PSTCORE_VERSION}`);
+		execSync(`npm install node-pstcore@${node_pstcore_version}`);
 	}
 	
-    console.log(`Updated node-pstcore version to ${process.env.NODE_PSTCORE_VERSION}`);
+    console.log(`Updated node-pstcore version to ${node_pstcore_version}`);
 }else{
 	console.log(`Use node-pstcore original version in package.json`);
 }
