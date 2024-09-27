@@ -14,7 +14,15 @@ try{
 }
 
 try{
-	execSync('git clone --depth 1 https://github.com/picam360/pviewer.git www -b v0.32', {cwd : __dirname});
+	let pviewer_version = "https://github.com/picam360/pviewer.git -b v0.32";
+	if (process.env.PVIEWER_VERSION) {
+		pviewer_version = process.env.PVIEWER_VERSION;
+		if(pviewer_version == "github"){
+			pviewer_version = "https://github.com/picam360/pviewer.git";
+		}
+	}
+    console.log(`pviewer from "${pviewer_version}"`);
+	execSync(`git clone --depth 1 ${pviewer_version} www`, {cwd : __dirname});
 }catch(err){
 	console.log("error on git:" + err);
 }
