@@ -1,6 +1,7 @@
 #! /usr/bin/env node
 process.chdir(__dirname);
 
+const path = require('path');
 const fs = require("fs");
 const { execSync } = require('child_process');
 
@@ -27,10 +28,13 @@ try{
 }
 
 if (process.env.NODE_PSTCORE_VERSION) {
-	fs.rmSync('node_modules/node-pstcore', {recursive:true, force:true});
+	const node_pstcore_path = path.dirname(require.resolve('node-pstcore'));
+	console.log(node_pstcore_path, path.dirname(node_pstcore_path));
+
+	fs.rmSync(node_pstcore_path, {recursive:true, force:true});
 	if(process.env.NODE_PSTCORE_VERSION.startsWith("https")){
-		execSync(`git clone --depth 1 ${process.env.NODE_PSTCORE_VERSION} node-pstcore`, {cwd : `${__dirname}/node_modules`});
-		execSync(`npm install`, {cwd : `${__dirname}/node_modules/node-pstcore`});
+		execSync(`git clone --depth 1 ${process.env.NODE_PSTCORE_VERSION} node-pstcore`, {cwd : path.dirname(node_pstcore_path)});
+		execSync(`npm install`, {cwd : node_pstcore_path});
 	}else{
 		execSync(`npm install node-pstcore@${process.env.NODE_PSTCORE_VERSION}`);
 	}
