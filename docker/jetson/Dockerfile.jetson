@@ -9,11 +9,11 @@ FROM nvcr.io/nvidia/l4t-base:r${L4T_VERSION}
 
 #need to redefine
 ARG L4T_VERSION=32.5.0
-ARG PSERVER_VERSION=latest
+ARG NODE_PSERVER_VERSION=latest
 ARG NODE_PSTCORE_VERSION=
 
 RUN echo "L4T_VERSION=${L4T_VERSION}"
-RUN echo "PSERVER_VERSION=${PSERVER_VERSION}"
+RUN echo "NODE_PSERVER_VERSION=${NODE_PSERVER_VERSION}"
 RUN echo "NODE_PSTCORE_VERSION=${NODE_PSTCORE_VERSION}"
 
 RUN apt-get update && apt-get install -y \
@@ -37,11 +37,7 @@ RUN nodebrew install v14.17.1 && \
 ENV L4T_VERSION ${L4T_VERSION}
 ENV NODE_PSTCORE_VERSION ${NODE_PSTCORE_VERSION}
 RUN npm config set unsafe-perm true && \
-    if echo "${PSERVER_VERSION}" | grep -q "^https"; then \
-        npm -g install ${PSERVER_VERSION}; \
-    else \
-        npm -g install node-pserver@${PSERVER_VERSION}; \
-    fi
+    npm -g install ${NODE_PSERVER_VERSION};
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_calib3d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_core.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1
 RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1

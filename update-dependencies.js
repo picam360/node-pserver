@@ -17,4 +17,6 @@ if (newVersion) {
   // Update package.json
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2), 'utf8');
   console.log(`Updated node-pstcore version to ${newVersion} in package.json`);
+}else{
+  console.log(`Use node-pstcore original version ${packageJson.dependencies['node-pstcore']} in package.json`);
 }
