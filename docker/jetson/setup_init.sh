@@ -4,7 +4,18 @@ PSERVER_VERSION=$1
 CONFIG_PATH=$2
 
 sudo apt-get update
-sudo apt-get -y install nano p7zip-full p7zip-rar nvidia-container-runtime nvidia-docker2
+sudo apt-get install -y build-essential \
+                        cmake \
+                        curl \
+                        git \
+                        nano \
+                        pkg-config \
+                        v4l-utils \
+                        usbutils \
+                        network-manager \
+                        p7zip-full p7zip-rar \
+                        nvidia-container-runtime nvidia-docker2
+                        
 sudo systemctl restart docker
 
 bash setup_image.sh $PSERVER_VERSION
