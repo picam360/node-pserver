@@ -351,21 +351,6 @@ async.waterfall([
 		if(process.platform === 'win32') {
 		}else if(process.platform === 'darwin') {
 		}else if(process.platform === 'linux') {
-			var disk = require('diskusage');
-			var disk_free = 0;
-			setInterval(function() {
-				disk.check('/tmp', function(err, info) {
-					disk_free = info.available;
-				});
-			}, 1000);
-			setInterval(function() {
-				if (global.gc && os.freemem() < GC_THRESH) {
-					console.log("gc : free=" + os.freemem() + " usage=" +
-						process.memoryUsage().rss);
-					console.log("disk_free=" + disk_free);
-					global.gc();
-				}
-			}, 100);
 		}
 		
 		//check memory usage
