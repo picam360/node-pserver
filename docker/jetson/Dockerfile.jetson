@@ -5,7 +5,7 @@
 
 ARG L4T_VERSION=32.5.0
 
-FROM nvcr.io/nvidia/l4t-base:${L4T_VERSION}
+FROM nvcr.io/nvidia/l4t-base:r${L4T_VERSION}
 
 #need to redefine
 ARG L4T_VERSION=32.5.0
@@ -51,4 +51,4 @@ COPY www/config.json /root/.nodebrew/current/lib/node_modules/node-pserver/www/c
 
 EXPOSE 9001
 EXPOSE 9002
-ENTRYPOINT ["/usr/bin/bash"]
+ENTRYPOINT ["pserver"]
