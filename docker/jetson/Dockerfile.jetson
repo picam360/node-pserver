@@ -5,7 +5,7 @@
 
 ARG L4T_VERSION=32.5.0
 
-FROM nvcr.io/nvidia/l4t-base:r${L4T_VERSION}
+FROM nvcr.io/nvidia/l4t-base:${L4T_VERSION}
 
 #need to redefine
 ARG L4T_VERSION=32.5.0
@@ -13,10 +13,18 @@ ARG NODE_PSERVER_VERSION=latest
 ARG NODE_PSTCORE_VERSION=
 ARG PVIEWER_VERSION=
 
+SHELL ["/bin/bash", "-c"]
+
 RUN echo "L4T_VERSION=${L4T_VERSION}"
 RUN echo "NODE_PSERVER_VERSION=${NODE_PSERVER_VERSION}"
 RUN echo "NODE_PSTCORE_VERSION=${NODE_PSTCORE_VERSION}"
 RUN echo "PVIEWER_VERSION=${PVIEWER_VERSION}"
+
+ENV HOME /root
+ENV L4T_VERSION ${L4T_VERSION}
+ENV NODE_VERSION 20.10.0
+ENV NODE_PSTCORE_VERSION ${NODE_PSTCORE_VERSION}
+ENV PVIEWER_VERSION ${PVIEWER_VERSION}
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -29,38 +37,14 @@ RUN apt-get update && apt-get install -y \
     usbutils \
     network-manager \
     p7zip-full p7zip-rar
-RUN curl -L git.io/nodebrew | perl - setup
-RUN echo "export PATH=$HOME/.nodebrew/current/bin:\$PATH" >> $HOME/.bashrc
-ENV HOME /root
+    
+COPY node/setup_nodebrew.sh $HOME/setup_nodebrew.sh
+RUN bash $HOME/setup_nodebrew.sh $NODE_VERSION
 ENV PATH $HOME/.nodebrew/current/bin:$PATH
-RUN sed -i -z "s/} elsif (\$machine =~ m\/aarch64\/) {\n        \$arch = 'armv7l';/} elsif (\$machine =~ m\/aarch64\/) {\n        \$arch = 'arm64'/g" $HOME/.nodebrew/nodebrew
-RUN nodebrew install v14.17.1 && \
-    nodebrew use v14.17.1
-ENV L4T_VERSION ${L4T_VERSION}
-ENV NODE_PSTCORE_VERSION ${NODE_PSTCORE_VERSION}
-ENV PVIEWER_VERSION ${PVIEWER_VERSION}
-RUN npm config set unsafe-perm true && \
-    npm -g install ${NODE_PSERVER_VERSION};
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_calib3d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.1
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_core.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.1
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.1
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_features2d.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.1
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_flann.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.1
-#RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_highgui.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.1
-#RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_video.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_video.so.4.1
-#RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_dnn.so.4.1 /usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.1
 
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_calib3d.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_calib3d.so.4.5
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_core.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_imgproc.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_imgproc.so.4.5
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_features2d.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_features2d.so.4.5
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_flann.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_flann.so.4.5
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_highgui.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_highgui.so.4.5
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_video.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_video.so.4.5
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libopencv_dnn.so.4.5 /usr/lib/aarch64-linux-gnu/libopencv_dnn.so.4.5
-
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libtbb.so.2 /usr/lib/aarch64-linux-gnu/libtbb.so.2
-RUN cp /root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release/libjpeg.so /usr/lib/aarch64-linux-gnu/libjpeg.so
+COPY setup_pserver.sh $HOME/setup_pserver.sh
+RUN bash -x $HOME/setup_pserver.sh ${NODE_PSERVER_VERSION}
+ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release
 
 COPY etc/udev/99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
 COPY etc/udev/100-usb-serial.rules /etc/udev/rules.d/100-usb-serial.rules
