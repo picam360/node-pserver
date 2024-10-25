@@ -22,7 +22,6 @@ RUN echo "PVIEWER_VERSION=${PVIEWER_VERSION}"
 
 ENV HOME /root
 ENV L4T_VERSION ${L4T_VERSION}
-ENV NODE_VERSION 20.10.0
 ENV NODE_PSTCORE_VERSION ${NODE_PSTCORE_VERSION}
 ENV PVIEWER_VERSION ${PVIEWER_VERSION}
 
@@ -39,7 +38,7 @@ RUN apt-get update && apt-get install -y \
     p7zip-full p7zip-rar
     
 COPY node/setup_nodebrew.sh $HOME/setup_nodebrew.sh
-RUN cd $HOME && bash ./setup_nodebrew.sh $NODE_VERSION
+RUN cd $HOME && bash ./setup_nodebrew.sh
 ENV PATH $HOME/.nodebrew/current/bin:$PATH
 
 COPY setup_pserver.sh $HOME/setup_pserver.sh
