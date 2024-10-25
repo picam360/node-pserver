@@ -15,4 +15,4 @@ do
   esac
 done
 
-docker run --rm --runtime nvidia --name pserver -p 9001:9001 -v /dev:/dev $CONFIG_DIR_PARAM --net=host -e DISPLAY=:0 -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native -v /var/run/dbus:/var/run/dbus --privileged pserver:@PSERVER_VERSION@ $@
+docker run --rm --entrypoint pserver --runtime nvidia --name pserver -p 9001:9001 -v /dev:/dev $CONFIG_DIR_PARAM --net=host -e DISPLAY=:0 -e PULSE_SERVER=unix:${XDG_RUNTIME_DIR}/pulse/native -v ${XDG_RUNTIME_DIR}/pulse/native:${XDG_RUNTIME_DIR}/pulse/native -v /var/run/dbus:/var/run/dbus --privileged pserver:@PSERVER_VERSION@ $@

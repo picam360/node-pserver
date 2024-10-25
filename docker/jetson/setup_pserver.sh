@@ -11,13 +11,12 @@ fi
 # If PSERVER starts with http
 if [[ "$PSERVER_VERSION" == http* ]]; then
   echo "PSERVER_VERSION starts with http. Cloning the Git repository."
-  git clone --depth=1 "$PSERVER_VERSION" pserver
+  git clone --depth=1 "$PSERVER_VERSION" node-pserver
   if [ $? -eq 0 ]; then
-    cd pserver
+    cd node-pserver
     npm install --loglevel=verbose
     npm install -g . --unsafe-perm --loglevel=verbose
     cd ..
-    rm -rf pserver  # Delete the working directory
   else
     echo "Failed to clone the Git repository."
     exit 1

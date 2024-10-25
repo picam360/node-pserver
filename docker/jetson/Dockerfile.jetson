@@ -39,11 +39,11 @@ RUN apt-get update && apt-get install -y \
     p7zip-full p7zip-rar
     
 COPY node/setup_nodebrew.sh $HOME/setup_nodebrew.sh
-RUN bash $HOME/setup_nodebrew.sh $NODE_VERSION
+RUN cd $HOME && bash ./setup_nodebrew.sh $NODE_VERSION
 ENV PATH $HOME/.nodebrew/current/bin:$PATH
 
 COPY setup_pserver.sh $HOME/setup_pserver.sh
-RUN bash -x $HOME/setup_pserver.sh ${NODE_PSERVER_VERSION}
+RUN cd $HOME && bash -x ./setup_pserver.sh ${NODE_PSERVER_VERSION}
 ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:/root/.nodebrew/current/lib/node_modules/node-pserver/node_modules/node-pstcore/build/Release
 
 COPY etc/udev/99-hqcam.rules /etc/udev/rules.d/99-hqcam.rules
@@ -52,4 +52,4 @@ COPY www/config.json /root/.nodebrew/current/lib/node_modules/node-pserver/www/c
 
 EXPOSE 9001
 EXPOSE 9002
-ENTRYPOINT ["pserver"]
+ENTRYPOINT ["/usr/bin/bash"]

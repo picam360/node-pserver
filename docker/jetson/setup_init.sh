@@ -24,3 +24,5 @@ bash setup_service.sh $CONFIG_PATH
 sudo sed -i 's/FAN_DEFAULT_PROFILE .*/FAN_DEFAULT_PROFILE cool/g' /etc/nvfancontrol.conf
 sudo rm /var/lib/nvfancontrol/status
 sudo systemctl restart nvfancontrol
+
+sudo chmod 666 /var/run/docker.sock
